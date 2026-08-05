@@ -12,12 +12,15 @@ This document tracks the status of the agent framework project.
 - [x] Event system implementation
 - [x] Logging system implementation
 - [x] Core runtime implementation
+- [x] Tool management system implementation
+- [x] Memory management system implementation
+- [x] Model integration implementation
 - [ ] Shared resource implementation
 - [ ] Agent package implementation
 
 ## Status Indicators
 
-- **Core Runtime:** In Progress
+- **Core Runtime:** Completed
 - **Shared Resources:** Not Started
 - **Agent Packages:** Not Started
 
@@ -27,6 +30,8 @@ This document tracks the status of the agent framework project.
 - **test_events.py:** 4 passed
 - **test_logging.py:** 2 passed
 - **test_runtime.py:** 3 passed
+- **test_tools.py:** 6 passed
+- **test_memory.py:** 6 passed
 
 ## Changelog
 
@@ -35,3 +40,7 @@ This document tracks the status of the agent framework project.
 - **2026-08-04:** Implemented and tested the event system.
 - **2026-08-04:** Implemented and tested the logging system.
 - **2026-08-04:** Implemented and tested the core agent runtime.
+- **2026-08-04:** Implemented and tested the tool management system.
+- **2026-08-04:** Fixed a schema mismatch bug in the FileSystemTool.
+- **2026-08-04:** Implemented and tested the memory management system.
+- **2026-08-04:** Implemented and tested the model integration.
