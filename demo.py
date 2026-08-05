@@ -1,7 +1,7 @@
 import time
+from builders.build_agent import build_agent
 from core.interfaces.agent import Agent
 from core.events.bus import EventBus
-from core.runtime.agent import AgentRuntime
 from core.logging.logger import get_logger
 
 # 1. Create a basic agent
@@ -35,7 +35,9 @@ event_bus.subscribe("runtime.stop", on_runtime_stop)
 
 # 4. Initialize the AgentRuntime
 agent = DemoAgent()
-runtime = AgentRuntime(agent=agent, event_bus=event_bus)
+runtime = build_agent("/home/runner/work/agents/agents/packages/autonomous")
+runtime.agent = agent
+runtime.event_bus = event_bus
 
 # 5. Start the runtime
 if __name__ == "__main__":
