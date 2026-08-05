@@ -1,0 +1,15 @@
+name: Marketing Agent
+version: 1.0.0
+inherits: core
+description: Agent for marketing campaign management and analysis.
+tools:
+  - browser
+  - email
+workflows:
+  - campaign_planning
+  - lead_generation
+  - performance_analysis
+knowledge:
+  - marketing_funnels
+entrypoint:
+  workflow: marketing_controller

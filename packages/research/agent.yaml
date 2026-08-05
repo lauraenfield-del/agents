@@ -1,0 +1,14 @@
+name: Research Agent
+version: 1.0.0
+inherits: core
+description: Research-focused agent for information gathering and analysis.
+tools:
+  - browser
+  - scraper
+workflows:
+  - analysis
+  - reporting
+knowledge:
+  - research_methodology
+entrypoint:
+  workflow: research_controller

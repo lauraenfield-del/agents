@@ -1,0 +1,15 @@
+name: Coding Agent
+version: 1.0.0
+inherits: core
+description: Agent specialized in code generation, modification, and review.
+tools:
+  - terminal
+  - filesystem
+workflows:
+  - implementation
+  - testing
+  - refactoring
+knowledge:
+  - coding_best_practices
+entrypoint:
+  workflow: coding_controller

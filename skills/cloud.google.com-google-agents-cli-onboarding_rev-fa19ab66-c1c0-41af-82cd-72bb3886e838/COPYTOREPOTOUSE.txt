@@ -1,0 +1,18 @@
+from google.adk.agents.llm_agent import LlmAgent
+from google.adk.integrations.agent_registry import AgentRegistry
+from google.adk.tools import skill_toolset
+
+PROJECT_ID = "raven-503820"
+LOCATION = "us"
+SKILL_NAME = "projects/raven-503820/locations/us/skills/cloud.google.com-google-agents-cli-onboarding"
+
+agent_registry = AgentRegistry(project=PROJECT_ID, location=LOCATION)
+skill = agent_registry.published_skills.get(name=SKILL_NAME)
+skill_tools = skill_toolset.SkillToolset(skills=[skill])
+    
+root_agent = LlmAgent(
+    model="gemini-3.6-flash",
+    name="sample_agent",
+    instruction="Use the tools you have access to help answer user questions",
+    tools=[skill_tools],
+)

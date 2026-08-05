@@ -1,0 +1,15 @@
+name: Social Media Agent
+version: 1.0.0
+inherits: core
+description: Agent for managing and automating social media interactions.
+tools:
+  - browser
+  - social_posting
+workflows:
+  - content_creation
+  - scheduling
+  - engagement
+knowledge:
+  - social_media_strategy
+entrypoint:
+  workflow: social_media_controller

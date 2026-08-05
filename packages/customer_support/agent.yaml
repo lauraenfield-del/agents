@@ -1,0 +1,15 @@
+name: Customer Support Agent
+version: 1.0.0
+inherits: core
+description: Agent for handling customer support inquiries and issues.
+tools:
+  - ticketing_system
+  - knowledge_base
+workflows:
+  - ticket_routing
+  - issue_resolution
+  - customer_feedback
+knowledge:
+  - product_documentation
+entrypoint:
+  workflow: customer_support_controller
