@@ -16,6 +16,18 @@ def test_agent_interface():
 
 def test_tool_interface():
     class MyTool(Tool):
+        @property
+        def name(self):
+            return "my_tool"
+
+        @property
+        def description(self):
+            return "Test tool"
+
+        @property
+        def schema(self):
+            return {"type": "object"}
+
         def execute(self, *args, **kwargs):
             return "Executing"
 
@@ -35,6 +47,10 @@ def test_memory_interface():
             self.data[key] = value
         def retrieve(self, key):
             return self.data.get(key)
+        def delete(self, key):
+            self.data.pop(key, None)
+        def list_keys(self):
+            return list(self.data.keys())
 
     memory = MyMemory()
     memory.store("foo", "bar")

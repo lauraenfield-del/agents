@@ -3,6 +3,9 @@ from core.interfaces.agent import Agent
 from core.events.bus import EventBus
 from core.runtime.agent import AgentRuntime
 from core.logging.logger import get_logger
+from core.tools.manager import ToolManager
+from core.memory.simple import SimpleMemory
+from core.model.mock import MockModel
 
 # 1. Create a basic agent
 class DemoAgent(Agent):
@@ -35,7 +38,13 @@ event_bus.subscribe("runtime.stop", on_runtime_stop)
 
 # 4. Initialize the AgentRuntime
 agent = DemoAgent()
-runtime = AgentRuntime(agent=agent, event_bus=event_bus)
+runtime = AgentRuntime(
+    agent=agent,
+    event_bus=event_bus,
+    tool_manager=ToolManager(),
+    memory=SimpleMemory(),
+    model=MockModel(),
+)
 
 # 5. Start the runtime
 if __name__ == "__main__":
