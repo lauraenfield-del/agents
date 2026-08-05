@@ -15,6 +15,10 @@ def register_package(
     if registry_path.exists():
         with registry_path.open("r", encoding="utf-8") as registry_file:
             registry = json.load(registry_file) or {}
+        if not isinstance(registry, dict):
+            raise ValueError(
+                f"Registry file at '{registry_path}' must contain a JSON object, not {type(registry).__name__}."
+            )
     else:
         registry = {}
 

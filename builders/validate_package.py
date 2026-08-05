@@ -17,6 +17,8 @@ REQUIRED_KEYS = {
 
 def load_package_manifest(package_dir: str | Path) -> dict:
     manifest_path = Path(package_dir) / "agent.yaml"
+    if not manifest_path.exists():
+        raise ValueError(f"Package manifest not found at expected path: {manifest_path}")
     with manifest_path.open("r", encoding="utf-8") as manifest_file:
         data = yaml.safe_load(manifest_file) or {}
     if not isinstance(data, dict):
@@ -38,5 +40,12 @@ def validate_package(package_dir: str | Path) -> dict:
     workflow = manifest["entrypoint"].get("workflow")
     if not isinstance(workflow, str) or not workflow:
         raise ValueError("Package manifest entrypoint.workflow must be a non-empty string")
+
+    for list_field in ("tools", "workflows", "knowledge"):
+        for i, item in enumerate(manifest[list_field]):
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"Package manifest field '{list_field}[{i}]' must be a string, got {type(item).__name__}"
+                )
 
     return manifest

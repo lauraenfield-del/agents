@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 from builders.build_agent import build_agent
 from core.interfaces.agent import Agent
 from core.events.bus import EventBus
@@ -34,9 +35,13 @@ event_bus.subscribe("agent.run.after", on_agent_run_after)
 event_bus.subscribe("runtime.stop", on_runtime_stop)
 
 # 4. Initialize the AgentRuntime
+_packages_dir = Path(__file__).parent / "packages"
 agent = DemoAgent()
-runtime = build_agent("/home/runner/work/agents/agents/packages/autonomous")
+runtime = build_agent(_packages_dir / "autonomous")
 runtime.agent = agent
+runtime.agent.tools = runtime.tool_manager
+runtime.agent.memory = runtime.memory
+runtime.agent.model = runtime.model
 runtime.event_bus = event_bus
 
 # 5. Start the runtime
