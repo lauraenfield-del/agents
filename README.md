@@ -298,7 +298,7 @@ The runtime:
 1. Loads and validates the package's `agent.yaml`
 2. Registers the tools declared in the manifest
 3. Wires up memory and a model
-4. Calls `agent.run()` and prints the result
+4. Calls `runtime.start()`, which fires the full agent lifecycle and logs progress
 
 ### Option B — demo.py (event-driven demo)
 
