@@ -14,12 +14,19 @@ def schema():
 
 def test_valid_instance(schema):
     instance = {"name": "John Doe", "email": "john.doe@example.com"}
-    assert Validator.validate(instance, schema) is True
+    Validator.validate(instance, schema)
 
 def test_invalid_instance_missing_required(schema):
     instance = {"name": "John Doe"}
-    assert Validator.validate(instance, schema) is False
+    with pytest.raises(ValueError):
+        Validator.validate(instance, schema)
 
 def test_invalid_instance_wrong_type(schema):
     instance = {"name": 123, "email": "john.doe@example.com"}
-    assert Validator.validate(instance, schema) is False
+    with pytest.raises(ValueError):
+        Validator.validate(instance, schema)
+
+def test_invalid_email_format(schema):
+    instance = {"name": "John Doe", "email": "not-an-email"}
+    with pytest.raises(ValueError):
+        Validator.validate(instance, schema)

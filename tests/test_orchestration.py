@@ -30,6 +30,17 @@ def test_workflow_registration(workflow_manager):
     assert "my_workflow" in workflow_manager._workflows 
 
 def test_run_sequential_workflow(workflow_manager, mock_agent):
+    call_order = []
+
+    def record_prompt(*args, **kwargs):
+        call_order.append("prompt")
+
+    def record_tool(*args, **kwargs):
+        call_order.append("tool_call")
+
+    mock_agent.model.generate.side_effect = record_prompt
+    mock_agent.tools.execute_tool.side_effect = record_tool
+
     steps = [
         {"prompt": "This is a test prompt."},
         {"tool_call": {"name": "filesystem", "args": {"operation": "read", "path": "test.txt"}}},
@@ -40,14 +51,15 @@ def test_run_sequential_workflow(workflow_manager, mock_agent):
 
     mock_agent.model.generate.assert_called_once_with("This is a test prompt.")
     mock_agent.tools.execute_tool.assert_called_once_with("filesystem", operation="read", path="test.txt")
+    assert call_order == ["prompt", "tool_call"]
 
 def test_run_non_existent_workflow(workflow_manager, mock_agent):
-    with pytest.raises(ValueError, match="Workflow 'non_existent_workflow' not found."):
+    with pytest.raises(ValueError, match=r"Workflow 'non_existent_workflow' not found\."):
         workflow_manager.run_workflow("non_existent_workflow", mock_agent)
 
 def test_register_invalid_workflow(workflow_manager):
     class NotAWorkflow:
         pass
 
-    with pytest.raises(TypeError, match="Workflow must be an instance of the Workflow interface."):
+    with pytest.raises(TypeError, match=r"Workflow must be an instance of the Workflow interface\."):
         workflow_manager.register_workflow(NotAWorkflow())

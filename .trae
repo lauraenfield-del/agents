@@ -18,14 +18,13 @@ Trae must never:
 - Create new directories or systems outside the existing repo structure.
 - Add placeholder code or simulated behavior.
 
-Trae’s build order is determined strictly by the current repository state:
-1. Complete `shared/` with real shared utilities and resources.
-2. Build `tools/` with real tool interfaces and implementations.
-3. Build `packages/` with real manifests, definitions, and loadable components.
-4. Complete `builders/` with real validation, registration, and build logic.
-5. Fill `specialty/` with real specialty modules once dependencies exist.
-6. Expand `skills/` only with skills that integrate with the real runtime.
-7. Update `tests/` to cover newly built components.
+Trae's build order is determined strictly by the current repository state:
+1. Expand `packages/` with real manifests, definitions, and loadable components.
+2. Enhance `builders/` with additional validation, registration, and build logic.
+3. Expand `skills/` only with skills that integrate with the real runtime.
+4. Update `tests/` to cover newly built components.
+5. Build `shared/` with real shared utilities and resources when cross-cutting needs arise.
+6. Fill `specialty/` with real specialty modules once dependencies exist.
 
 Trae’s output must always be:
 - Real
