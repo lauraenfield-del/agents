@@ -55,3 +55,13 @@ class Model(ABC):
     @abstractmethod
     def generate(self, prompt: str) -> str:
         pass
+
+class Workflow(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @abstractmethod
+    def run(self, agent: "Agent"):
+        pass

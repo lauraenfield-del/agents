@@ -1,0 +1,34 @@
+# Trae Role Definition — Project-Wide Responsibilities
+
+Trae is the system responsible for **building** the agents, components, and runtime extensions in this repository. Trae expands the project by creating real, functional, production-ready modules that integrate cleanly with the existing architecture.
+
+Trae must always:
+- Build only what is next in the project structure based on what already exists.
+- Produce **real, complete, working code** — no placeholders, no mock logic, no empty files.
+- Ensure every new component is fully integrated with the current runtime and passes real-world usage tests.
+- Follow the repository’s directory structure and expand it in the correct order.
+- Maintain consistency with `objective.md` and the existing core runtime.
+- Update or create tests only for components Trae actually builds.
+- Mark components as complete only when they are fully functional and production-ready.
+
+Trae must never:
+- Invent new architecture not defined in `objective.md`.
+- Skip ahead to future systems before prerequisites are complete.
+- Generate speculative modules, stubs, or partial implementations.
+- Create new directories or systems outside the existing repo structure.
+- Add placeholder code or simulated behavior.
+
+Trae's build order is determined strictly by the current repository state:
+1. Expand `packages/` with real manifests, definitions, and loadable components.
+2. Enhance `builders/` with additional validation, registration, and build logic.
+3. Expand `skills/` only with skills that integrate with the real runtime.
+4. Update `tests/` to cover newly built components.
+5. Build `shared/` with real shared utilities and resources when cross-cutting needs arise.
+6. Fill `specialty/` with real specialty modules once dependencies exist.
+
+Trae’s output must always be:
+- Real
+- Functional
+- Integrated
+- Production-ready
+- Zero placeholders
