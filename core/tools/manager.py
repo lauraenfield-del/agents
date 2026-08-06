@@ -1,5 +1,6 @@
 from typing import Dict, List
 from core.interfaces.agent import Tool
+from core.validation.validator import Validator
 
 class ToolManager:
     def __init__(self):
@@ -10,10 +11,15 @@ class ToolManager:
             raise TypeError("Tool must be an instance of the Tool interface.")
         self._tools[tool.name] = tool
 
-    def execute_tool(self, name: str, *args, **kwargs):
+    def execute_tool(self, name: str, **kwargs):
         if name not in self._tools:
             raise ValueError(f"Tool '{name}' not found.")
-        return self._tools[name].execute(*args, **kwargs)
+        
+        tool = self._tools[name]
+        if not Validator.validate(kwargs, tool.schema):
+            raise ValueError(f"Invalid arguments for tool '{name}'.")
+
+        return tool.execute(**kwargs)
 
     def list_tools(self) -> List[str]:
         return list(self._tools.keys())
