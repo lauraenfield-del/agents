@@ -3,10 +3,8 @@ from jsonschema.exceptions import ValidationError
 
 class Validator:
     @staticmethod
-    def validate(instance: dict, schema: dict) -> bool:
+    def validate(instance: dict, schema: dict):
         try:
             validate(instance=instance, schema=schema)
-            return True
         except ValidationError as e:
-            # Optionally, you could log the validation error here
-            return False
+            raise ValueError(f"Invalid arguments: {e.message}") from e

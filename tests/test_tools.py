@@ -48,12 +48,12 @@ def test_execute_non_existent_tool(tool_manager):
 
 def test_execute_tool_with_invalid_args(tool_manager, filesystem_tool):
     tool_manager.register_tool(filesystem_tool)
-    with pytest.raises(ValueError, match="Invalid arguments for tool 'filesystem'."):
+    with pytest.raises(ValueError, match="'path' is a required property"):
         tool_manager.execute_tool("filesystem", operation="read") # Missing path
 
 def test_execute_write_with_missing_content(tool_manager, filesystem_tool):
     tool_manager.register_tool(filesystem_tool)
-    with pytest.raises(ValueError, match="Invalid arguments for tool 'filesystem'."):
+    with pytest.raises(ValueError, match="'content' is a required property"):
         tool_manager.execute_tool("filesystem", operation="write", path="test.txt")
 
 def test_register_invalid_tool(tool_manager):

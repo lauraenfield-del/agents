@@ -11,15 +11,14 @@ class ToolManager:
             raise TypeError("Tool must be an instance of the Tool interface.")
         self._tools[tool.name] = tool
 
-    def execute_tool(self, name: str, **kwargs):
+    def execute_tool(self, name: str, *args, **kwargs):
         if name not in self._tools:
             raise ValueError(f"Tool '{name}' not found.")
         
         tool = self._tools[name]
-        if not Validator.validate(kwargs, tool.schema):
-            raise ValueError(f"Invalid arguments for tool '{name}'.")
+        Validator.validate(kwargs, tool.schema)
 
-        return tool.execute(**kwargs)
+        return tool.execute(*args, **kwargs)
 
     def list_tools(self) -> List[str]:
         return list(self._tools.keys())
