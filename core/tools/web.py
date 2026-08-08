@@ -14,6 +14,7 @@ Security controls:
 from __future__ import annotations
 
 import html
+import http.client
 import ipaddress
 import socket
 from html.parser import HTMLParser
@@ -49,6 +50,56 @@ def _is_blocked_host(hostname: str) -> bool:
     return False
 
 
+def _is_blocked_ip(ip_str: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return True
+    return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved
+
+
+def _resolve_public_endpoints(hostname: str, port: int) -> list[tuple]:
+    try:
+        resolved = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        raise error.URLError(f"Failed to resolve host '{hostname}': {exc}") from exc
+
+    public_endpoints: list[tuple] = []
+    for family, socktype, proto, canonname, sockaddr in resolved:
+        ip_str = sockaddr[0]
+        if not _is_blocked_ip(ip_str):
+            public_endpoints.append((family, socktype, proto, canonname, sockaddr))
+    return public_endpoints
+
+
+def _connect_to_validated_public_endpoint(
+    hostname: str,
+    port: int,
+    timeout: float | None,
+    source_address: tuple[str, int] | None = None,
+) -> socket.socket:
+    endpoints = _resolve_public_endpoints(hostname, port)
+    if not endpoints:
+        raise error.URLError("Access to localhost/private targets is not allowed.")
+
+    last_exc: OSError | None = None
+    for family, socktype, proto, _canonname, sockaddr in endpoints:
+        sock = socket.socket(family, socktype, proto)
+        try:
+            if timeout is not None:
+                sock.settimeout(timeout)
+            if source_address:
+                sock.bind(source_address)
+            sock.connect(sockaddr)
+            return sock
+        except OSError as exc:
+            last_exc = exc
+            sock.close()
+    if last_exc is None:
+        raise error.URLError("Unable to establish connection.")
+    raise error.URLError(f"Connection failed: {last_exc}")
+
+
 def _validate_url_for_ssrf(url: str) -> str | None:
     """Return an error string if *url* fails SSRF validation, else ``None``."""
     parsed = urlparse(url)
@@ -70,9 +121,53 @@ class _SSRFSafeRedirectHandler(request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+class _SSRFSafeHTTPConnection(http.client.HTTPConnection):
+    def connect(self) -> None:
+        target_host = self._tunnel_host or self.host
+        target_port = getattr(self, "_tunnel_port", None) or self.port
+        self.sock = _connect_to_validated_public_endpoint(
+            hostname=target_host,
+            port=target_port,
+            timeout=self.timeout,
+            source_address=self.source_address,
+        )
+        if self._tunnel_host:
+            self._tunnel()
+
+
+class _SSRFSafeHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self) -> None:
+        target_host = self._tunnel_host or self.host
+        target_port = getattr(self, "_tunnel_port", None) or self.port
+        raw_sock = _connect_to_validated_public_endpoint(
+            hostname=target_host,
+            port=target_port,
+            timeout=self.timeout,
+            source_address=self.source_address,
+        )
+        self.sock = raw_sock
+        if self._tunnel_host:
+            self._tunnel()
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self.host)
+
+
+class _SSRFSafeHTTPHandler(request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_SSRFSafeHTTPConnection, req)
+
+
+class _SSRFSafeHTTPSHandler(request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_SSRFSafeHTTPSConnection, req)
+
+
 def _build_ssrf_safe_opener() -> request.OpenerDirector:
     """Return a urllib opener that validates every redirect against SSRF rules."""
-    return request.build_opener(_SSRFSafeRedirectHandler)
+    return request.build_opener(
+        _SSRFSafeRedirectHandler,
+        _SSRFSafeHTTPHandler,
+        _SSRFSafeHTTPSHandler,
+    )
 
 
 class _TextExtractor(HTMLParser):

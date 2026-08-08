@@ -1,4 +1,5 @@
 import json
+import ssl
 import smtplib
 from email.message import EmailMessage
 from urllib import error, request
@@ -111,7 +112,7 @@ class CommunicationTool(Tool):
         email_msg.set_content(message)
 
         with smtplib.SMTP(smtp_host, smtp_port, timeout=timeout_seconds) as smtp:
-            smtp.starttls()
+            smtp.starttls(context=ssl.create_default_context())
             smtp.login(smtp_username, smtp_password)
             smtp.send_message(email_msg)
 

@@ -1,5 +1,6 @@
 import pytest
 import os
+import ssl
 from core.tools.manager import ToolManager
 from core.tools.communication import CommunicationTool
 from core.tools.filesystem import FileSystemTool
@@ -152,3 +153,58 @@ def test_communication_webhook_success(tool_manager, communication_tool, monkeyp
         message="hello",
     )
     assert result["status"] == "sent"
+
+
+def test_communication_email_uses_verified_starttls_context(tool_manager, communication_tool, monkeypatch):
+    class DummySMTP:
+        def __init__(self, host, port, timeout):
+            self.host = host
+            self.port = port
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def starttls(self, *, context):
+            assert isinstance(context, ssl.SSLContext)
+
+        def login(self, username, password):
+            assert username == "user"
+            assert password == "pass"
+
+        def send_message(self, _message):
+            return None
+
+    monkeypatch.setattr("core.tools.communication.smtplib.SMTP", DummySMTP)
+    tool_manager.register_tool(communication_tool)
+    result = tool_manager.execute_tool(
+        "communication",
+        channel="email",
+        target="to@example.com",
+        message="hello",
+        subject="subject",
+        smtp_host="smtp.example.com",
+        smtp_port=587,
+        smtp_username="user",
+        smtp_password="pass",
+        sender="from@example.com",
+    )
+    assert result["status"] == "sent"
+
+
+def test_web_resolver_filters_private_ips(monkeypatch):
+    from core.tools.web import _resolve_public_endpoints
+
+    def fake_getaddrinfo(hostname, port, type=None):  # noqa: A002
+        return [
+            (2, 1, 6, "", ("127.0.0.1", port)),
+            (2, 1, 6, "", ("93.184.216.34", port)),
+        ]
+
+    monkeypatch.setattr("core.tools.web.socket.getaddrinfo", fake_getaddrinfo)
+    endpoints = _resolve_public_endpoints("example.com", 443)
+    assert len(endpoints) == 1
+    assert endpoints[0][4][0] == "93.184.216.34"

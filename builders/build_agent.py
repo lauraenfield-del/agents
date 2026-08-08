@@ -24,8 +24,8 @@ def _make_system_prompt(manifest: dict) -> str:
     return (
         f"You are {manifest.get('name', 'an AI agent')}. "
         f"{manifest.get('description', '')} "
-        "Answer clearly and helpfully. When you need to use a tool, "
-        "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
+        "Answer clearly and helpfully. Follow a practical Input->Plan->Act->Review "
+        "flow and use tools when they are needed to satisfy the user request."
     )
 
 
