@@ -1,10 +1,12 @@
 name: Social Media Agent
 version: 1.0.0
 inherits: core
-description: Agent for managing and automating social media interactions.
+description: Agent for managing social media strategy, content creation, scheduling, and engagement.
 tools:
-  - browser
-  - social_posting
+  - filesystem
+  - web_fetch
+  - web_search
+  - think
 workflows:
   - content_creation
   - scheduling

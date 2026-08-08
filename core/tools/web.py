@@ -1,16 +1,32 @@
+"""Web-fetch tool.
+
+Fetches the content of a URL over HTTP/HTTPS and returns the response body as
+plain text.  HTML responses are converted to readable text using *html.parser*
+from the standard library so no extra dependency is required.  Pass
+``as_html=true`` to get raw HTML instead.
+
+Security controls:
+* Only ``http`` and ``https`` schemes are accepted.
+* Requests to localhost, loopback, link-local, and private IP ranges are
+  blocked by default (SSRF guard).
+* Every redirect destination is validated against the same rules.
+"""
+from __future__ import annotations
+
 import html
 import ipaddress
-import re
 import socket
+from html.parser import HTMLParser
 from urllib import error, request
 from urllib.parse import urlparse
 
 from core.interfaces.agent import Tool
 
-_LOCALHOST_NAMES = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+_LOCALHOST_NAMES: frozenset[str] = frozenset({"localhost", "127.0.0.1", "::1", "0.0.0.0"})
 
 
 def _is_blocked_host(hostname: str) -> bool:
+    """Return True if *hostname* resolves to a private/loopback/reserved address."""
     if hostname in _LOCALHOST_NAMES or hostname.endswith(".localhost"):
         return True
     try:
@@ -34,7 +50,7 @@ def _is_blocked_host(hostname: str) -> bool:
 
 
 def _validate_url_for_ssrf(url: str) -> str | None:
-    """Return an error string if the URL fails SSRF validation, else None."""
+    """Return an error string if *url* fails SSRF validation, else ``None``."""
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         return "Only http and https URLs are supported."
@@ -54,80 +70,112 @@ class _SSRFSafeRedirectHandler(request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def build_ssrf_safe_opener() -> request.OpenerDirector:
+def _build_ssrf_safe_opener() -> request.OpenerDirector:
     """Return a urllib opener that validates every redirect against SSRF rules."""
     return request.build_opener(_SSRFSafeRedirectHandler)
 
 
-class WebTool(Tool):
+class _TextExtractor(HTMLParser):
+    """Minimal HTML-to-text converter (no external deps)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._parts: list[str] = []
+        self._skip_tags = {"script", "style", "head", "meta", "link"}
+        self._current_skip: int = 0
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if tag in self._skip_tags:
+            self._current_skip += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self._skip_tags and self._current_skip:
+            self._current_skip -= 1
+
+    def handle_data(self, data: str) -> None:
+        if not self._current_skip:
+            stripped = data.strip()
+            if stripped:
+                self._parts.append(html.unescape(stripped))
+
+    def get_text(self) -> str:
+        return "\n".join(self._parts)
+
+
+class WebFetchTool(Tool):
+    """Fetches a URL and returns its text content."""
+
     @property
     def name(self) -> str:
-        return "web"
+        return "web_fetch"
 
     @property
     def description(self) -> str:
-        return "Fetches web pages over HTTP(S) and returns text content for reading."
+        return (
+            "Fetch the content of a URL and return it as plain text (or raw HTML). "
+            "Useful for reading web pages, APIs, and online documents."
+        )
 
     @property
     def schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "url": {"type": "string", "format": "uri"},
-                "max_chars": {"type": "integer", "minimum": 256, "maximum": 50000},
+                "url": {
+                    "type": "string",
+                    "description": "The URL to fetch.",
+                },
+                "as_html": {
+                    "type": "boolean",
+                    "description": "Return raw HTML instead of extracted text. Defaults to false.",
+                },
+                "max_chars": {
+                    "type": "integer",
+                    "description": "Maximum characters to return. Defaults to 8000.",
+                },
+                "timeout": {
+                    "type": "number",
+                    "description": "Request timeout in seconds. Defaults to 15.",
+                },
             },
             "required": ["url"],
-            "additionalProperties": False,
         }
 
-    def execute(self, url: str, max_chars: int = 8000):
+    def execute(
+        self,
+        url: str,
+        as_html: bool = False,
+        max_chars: int = 8000,
+        timeout: int = 15,
+    ) -> str:
         err = _validate_url_for_ssrf(url)
         if err:
-            return {"error": "blocked_target", "details": err}
+            return f"Error: {err}"
 
         req = request.Request(
             url,
-            headers={
-                "User-Agent": "agents-framework/1.0",
-                "Accept": "text/html,application/json,text/plain,*/*",
-            },
+            headers={"User-Agent": "agents-framework/1.0"},
             method="GET",
         )
-        opener = build_ssrf_safe_opener()
+        opener = _build_ssrf_safe_opener()
         try:
-            with opener.open(req, timeout=20) as resp:
+            with opener.open(req, timeout=timeout) as resp:
                 content_type = resp.headers.get("Content-Type", "")
                 raw = resp.read(max_chars * 4)
         except error.HTTPError as exc:
             details = exc.read().decode("utf-8", errors="replace")
-            return {"error": f"HTTP {exc.code}", "details": details[:max_chars]}
+            return f"Error HTTP {exc.code}: {details[:max_chars]}"
         except error.URLError as exc:
-            return {"error": "network_error", "details": str(exc.reason)}
+            return f"Error fetching {url}: {exc.reason}"
 
         text = raw.decode("utf-8", errors="replace")
-        if "text/html" in content_type:
-            text = self._html_to_text(text)
+        if not as_html and "text/html" in content_type:
+            extractor = _TextExtractor()
+            extractor.feed(text)
+            text = extractor.get_text()
 
-        return {
-            "url": url,
-            "content_type": content_type,
-            "text": text[:max_chars],
-        }
+        return text[:max_chars]
 
-    def _html_to_text(self, html_text: str) -> str:
-        no_script = re.sub(
-            r"<script\b[\s\S]*?</script(?:\s+[^>]*)?\s*>",
-            " ",
-            html_text,
-            flags=re.IGNORECASE,
-        )
-        no_style = re.sub(
-            r"<style\b[\s\S]*?</style(?:\s+[^>]*)?\s*>",
-            " ",
-            no_script,
-            flags=re.IGNORECASE,
-        )
-        no_tags = re.sub(r"<[^>]+>", " ", no_style)
-        unescaped = html.unescape(no_tags)
-        normalized = re.sub(r"\s+", " ", unescaped)
-        return normalized.strip()
+
+# Backward-compatible alias
+WebTool = WebFetchTool

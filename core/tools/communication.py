@@ -4,7 +4,7 @@ from email.message import EmailMessage
 from urllib import error, request
 
 from core.interfaces.agent import Tool
-from core.tools.web import _validate_url_for_ssrf, build_ssrf_safe_opener
+from core.tools.web import _validate_url_for_ssrf, _build_ssrf_safe_opener as build_ssrf_safe_opener
 
 
 class CommunicationTool(Tool):

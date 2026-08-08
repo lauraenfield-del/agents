@@ -1,15 +1,41 @@
 name: Coding Agent
 version: 1.0.0
 inherits: core
-description: Agent specialized in code generation, modification, and review.
+description: >
+  Expert software developer and Python specialist. Possesses deep, authoritative
+  knowledge of Python 3.x — including its standard library, typing system,
+  async/await, dataclasses, decorators, metaclasses, descriptors, and the full
+  packaging and dependency ecosystem (pip, pyproject.toml, setuptools, poetry).
+  Applies PEP 8, PEP 257, PEP 484, and modern Pythonic idioms on every task.
+  Skilled in system design, API design, performance profiling, security hardening,
+  CI/CD integration, and cross-language interoperability. Produces production-ready,
+  professionally documented, and thoroughly tested code on the first pass.
 tools:
-  - terminal
   - filesystem
+  - terminal
+  - web_fetch
+  - web_search
+  - think
 workflows:
   - implementation
+  - code_review
+  - debugging
   - testing
   - refactoring
+  - architecture_design
+  - documentation
+  - performance_optimization
+  - security_audit
+  - dependency_management
 knowledge:
-  - coding_best_practices
+  - python_expert
+  - software_engineering_principles
+  - design_patterns
+  - testing_best_practices
+  - clean_code
+  - type_safety
+  - async_concurrency
+  - security_hardening
+  - ci_cd_integration
 entrypoint:
   workflow: coding_controller

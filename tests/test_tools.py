@@ -84,11 +84,11 @@ def test_register_invalid_tool(tool_manager):
         tool_manager.register_tool(NotATool())
 
 
-def test_terminal_tool_executes_command(tool_manager, terminal_tool):
+def test_terminal_tool_executes_command(tool_manager, terminal_tool, monkeypatch):
+    monkeypatch.setenv("AGENT_TERMINAL_ALLOW_CMDS", "echo")
     tool_manager.register_tool(terminal_tool)
     result = tool_manager.execute_tool("terminal", command="echo hello")
-    assert result["exit_code"] == 0
-    assert "hello" in result["stdout"]
+    assert "hello" in result
 
 
 def test_sequential_thinking_tracks_steps(tool_manager, sequential_tool):
@@ -120,11 +120,11 @@ def test_web_tool_fetches_and_strips_html(tool_manager, web_tool, monkeypatch):
         def open(self, *args, **kwargs):
             return DummyResponse()
 
-    monkeypatch.setattr("core.tools.web.build_ssrf_safe_opener", lambda: DummyOpener())
+    monkeypatch.setattr("core.tools.web._build_ssrf_safe_opener", lambda: DummyOpener())
     tool_manager.register_tool(web_tool)
-    result = tool_manager.execute_tool("web", url="https://example.com")
-    assert "Title" in result["text"]
-    assert "hello world" in result["text"]
+    result = tool_manager.execute_tool("web_fetch", url="https://example.com")
+    assert "Title" in result
+    assert "hello world" in result
 
 
 def test_communication_webhook_success(tool_manager, communication_tool, monkeypatch):

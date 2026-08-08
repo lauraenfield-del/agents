@@ -1,114 +1,140 @@
 import json
 import os
+import urllib.parse
+import urllib.request
+import warnings
 from pathlib import Path
 
 from builders.validate_package import validate_package
 from core.events.bus import EventBus
-from core.interfaces.agent import Agent
+from core.interfaces.agent import Model
 from core.memory.simple import SimpleMemory
-from core.model.mock import MockModel
-from core.model.openai_compatible import OpenAICompatibleModel
 from core.runtime.agent import AgentRuntime
-from core.tools.communication import CommunicationTool
+from core.runtime.conversational import ConversationalAgent
 from core.tools.filesystem import FileSystemTool
 from core.tools.manager import ToolManager
-from core.tools.sequential_thinking import SequentialThinkingTool
+from core.tools.search import WebSearchTool
 from core.tools.terminal import TerminalTool
-from core.tools.web import WebTool
+from core.tools.think import SequentialThinkingTool
+from core.tools.web import WebFetchTool
 
 
-class ManifestAgent(Agent):
-    def __init__(self, manifest: dict):
+def _make_system_prompt(manifest: dict) -> str:
+    """Build the system prompt from a package manifest."""
+    return (
+        f"You are {manifest.get('name', 'an AI agent')}. "
+        f"{manifest.get('description', '')} "
+        "Answer clearly and helpfully. When you need to use a tool, "
+        "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
+    )
+
+
+class ManifestAgent(ConversationalAgent):
+    """Agent loaded from a package manifest.
+
+    Inherits the full :class:`ConversationalAgent` capability so that every
+    manifest-driven agent can chat naturally and use the Input→Plan→Act→Review
+    loop out of the box.
+    """
+
+    def __init__(self, manifest: dict) -> None:
+        super().__init__(
+            name=manifest.get("name", "Agent"),
+            system_prompt=_make_system_prompt(manifest),
+        )
         self.manifest = manifest
 
-    def run(self, *args, **kwargs):
-        user_input = kwargs.get("user_input")
-        if user_input is None and args:
-            user_input = args[0]
-        if not user_input:
-            raise ValueError("ManifestAgent requires non-empty user_input.")
 
-        available_tools = ", ".join(self.tools.list_tools()) if self.tools else "none"
-        plan_prompt = (
-            f"You are {self.manifest['name']}. "
-            "Create a short plan with clear numbered steps for the user request below. "
-            "Reference which tools you would use when relevant.\n\n"
-            f"Available tools: {available_tools}\n"
-            f"User request: {user_input}"
-        )
-        plan = self.model.generate(plan_prompt)
-        self.memory.store("last_user_input", user_input)
-        self.memory.store("last_plan", plan)
+# ---------------------------------------------------------------------------
+# Tool registry helpers
+# ---------------------------------------------------------------------------
 
-        action_results = []
-        tool_calls = kwargs.get("tool_calls") or []
-        for call in tool_calls:
-            tool_name = call.get("name")
-            tool_args = call.get("args", {})
-            if not tool_name:
-                continue
-            try:
-                action_results.append(
-                    {
-                        "tool": tool_name,
-                        "result": self.tools.execute_tool(tool_name, **tool_args),
-                    }
-                )
-            except Exception as exc:
-                action_results.append({"tool": tool_name, "error": str(exc)})
-
-        self.memory.store("last_actions", action_results)
-        review_prompt = (
-            "Using the plan and tool results below, answer the user conversationally. "
-            "Be direct, factual, and helpful.\n\n"
-            f"Original request: {user_input}\n"
-            f"Plan:\n{plan}\n\n"
-            f"Tool results: {action_results}"
-        )
-        final_response = self.model.generate(review_prompt)
-        self.memory.store("last_response", final_response)
-        return final_response
-
-
-TOOL_ALIASES = {
-    "filesystem": "filesystem",
-    "terminal": "terminal",
-    "web": "web",
-    "browser": "web",
-    "scraper": "web",
-    "knowledge_base": "web",
-    "communication": "communication",
-    "email": "communication",
-    "ticketing_system": "communication",
-    "social_posting": "communication",
-    "sequential_thinking": "sequential_thinking",
+_TOOL_REGISTRY: dict[str, type] = {
+    "filesystem": FileSystemTool,
+    "web_fetch": WebFetchTool,
+    "web_search": WebSearchTool,
+    "think": SequentialThinkingTool,
+    "terminal": TerminalTool,
+    # "browser" is an alias for web_fetch for manifest compatibility
+    "browser": WebFetchTool,
 }
 
 
-def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]):
-    builtins = {
-        "filesystem": FileSystemTool(),
-        "terminal": TerminalTool(),
-        "web": WebTool(),
-        "communication": CommunicationTool(),
-        "sequential_thinking": SequentialThinkingTool(),
-    }
-    enabled = set()
+def _search_github_for_tool(tool_name: str, max_results: int = 3) -> list[dict[str, str]]:
+    """Search GitHub for public repositories that may implement *tool_name*.
+
+    Uses the unauthenticated GitHub Search API (60 req/h).  Returns a list of
+    dicts with ``name``, ``html_url``, and ``description`` keys.  Returns an
+    empty list on any error so callers can always iterate safely.
+    """
+    query = urllib.parse.quote_plus(f"agent tool {tool_name} python")
+    url = (
+        f"https://api.github.com/search/repositories"
+        f"?q={query}&sort=stars&order=desc&per_page={max_results}"
+    )
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "agents-framework/1.0"}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return [
+            {
+                "name": item.get("full_name", ""),
+                "html_url": item.get("html_url", ""),
+                "description": item.get("description") or "",
+            }
+            for item in data.get("items", [])[:max_results]
+        ]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]) -> None:
+    registered: set[str] = set()
     for tool_name in tool_names:
-        normalized = TOOL_ALIASES.get(tool_name)
-        if normalized is None:
-            raise ValueError(
-                f"Tool '{tool_name}' is declared in the manifest but no implementation is available."
+        tool_cls = _TOOL_REGISTRY.get(tool_name)
+        if tool_cls is not None:
+            instance = tool_cls()
+            # Avoid registering duplicate canonical names
+            if instance.name not in registered:
+                tool_manager.register_tool(instance)
+                registered.add(instance.name)
+        else:
+            msg = (
+                f"Manifest references unknown tool '{tool_name}'. "
+                "This tool will not be available at runtime. "
+                "Check the tool name or register a custom implementation."
             )
-        if normalized not in enabled:
-            tool_manager.register_tool(builtins[normalized])
-            enabled.add(normalized)
+            if os.getenv("AGENT_TOOL_SEARCH", "").strip().lower() in ("1", "true", "yes"):
+                suggestions = _search_github_for_tool(tool_name)
+                if suggestions:
+                    lines = [f"  • {s['name']} – {s['html_url']}" for s in suggestions]
+                    msg += (
+                        "\n  GitHub search found these candidate repositories:\n"
+                        + "\n".join(lines)
+                    )
+                else:
+                    msg += "\n  GitHub search returned no results for this tool name."
+            warnings.warn(msg, RuntimeWarning, stacklevel=2)
 
 
-def _build_model():
-    if os.getenv("AGENTS_USE_MOCK_MODEL", "").lower() in {"1", "true", "yes"}:
+def _build_model(manifest: dict) -> Model:
+    """Create the best available real model, falling back with a clear message."""
+    try:
+        from core.model.factory import create_model
+        return create_model(system_prompt=_make_system_prompt(manifest))
+    except RuntimeError as exc:
+        # No API key configured – inform the operator and use the mock so that
+        # the framework is still usable for local testing without credentials.
+        warnings.warn(
+            f"No LLM API key configured ({exc}). "
+            "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real model inference. "
+            "Falling back to MockModel for now.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        from core.model.mock import MockModel
         return MockModel()
-    return OpenAICompatibleModel()
 
 
 def build_agent(package_dir: str | Path) -> AgentRuntime:
@@ -121,7 +147,7 @@ def build_agent(package_dir: str | Path) -> AgentRuntime:
         event_bus=EventBus(),
         tool_manager=tool_manager,
         memory=SimpleMemory(),
-        model=_build_model(),
+        model=_build_model(manifest),
     )
 
 
