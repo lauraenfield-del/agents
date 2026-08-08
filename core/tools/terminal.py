@@ -3,6 +3,8 @@
 Runs a shell command in a subprocess and returns its combined stdout/stderr.
 
 Safety controls:
+* Commands are parsed with :func:`shlex.split` and executed with
+  ``shell=False`` to prevent shell injection attacks.
 * Commands are executed with a configurable timeout (default 30 s).
 * A configurable allow-list (``AGENT_TERMINAL_ALLOW_CMDS`` env var,
   space-separated) can restrict which command prefixes are permitted.
@@ -13,6 +15,7 @@ Safety controls:
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 
 from core.interfaces.agent import Tool
@@ -54,20 +57,27 @@ class TerminalTool(Tool):
         }
 
     def execute(self, command: str, cwd: str | None = None, timeout: int = 30) -> str:
+        try:
+            args = shlex.split(command)
+        except ValueError as exc:
+            return f"Invalid command syntax: {exc}"
+
+        if not args:
+            return "No command provided."
+
         allow_env = os.getenv("AGENT_TERMINAL_ALLOW_CMDS", "").strip()
         if allow_env:
             allowed = allow_env.split()
-            first_token = command.strip().split()[0] if command.strip() else ""
-            if first_token not in allowed:
+            if args[0] not in allowed:
                 return (
-                    f"Command '{first_token}' is not in the allowed command list. "
+                    f"Command '{args[0]}' is not in the allowed command list. "
                     f"Allowed: {', '.join(allowed)}"
                 )
 
         try:
             result = subprocess.run(
-                command,
-                shell=True,
+                args,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
@@ -81,5 +91,8 @@ class TerminalTool(Tool):
             return output.strip() or "(no output)"
         except subprocess.TimeoutExpired:
             return f"Command timed out after {timeout} seconds."
+        except FileNotFoundError:
+            return f"Command not found: {args[0]}"
         except Exception as exc:
             return f"Error running command: {exc}"
+

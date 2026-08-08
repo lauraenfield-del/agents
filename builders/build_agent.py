@@ -1,10 +1,10 @@
 import json
-import os
+import warnings
 from pathlib import Path
 
 from builders.validate_package import validate_package
 from core.events.bus import EventBus
-from core.interfaces.agent import Agent, Model, Tool
+from core.interfaces.agent import Model
 from core.memory.simple import SimpleMemory
 from core.runtime.agent import AgentRuntime
 from core.runtime.conversational import ConversationalAgent
@@ -14,6 +14,16 @@ from core.tools.search import WebSearchTool
 from core.tools.terminal import TerminalTool
 from core.tools.think import SequentialThinkingTool
 from core.tools.web import WebFetchTool
+
+
+def _make_system_prompt(manifest: dict) -> str:
+    """Build the system prompt from a package manifest."""
+    return (
+        f"You are {manifest.get('name', 'an AI agent')}. "
+        f"{manifest.get('description', '')} "
+        "Answer clearly and helpfully. When you need to use a tool, "
+        "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
+    )
 
 
 class ManifestAgent(ConversationalAgent):
@@ -27,12 +37,7 @@ class ManifestAgent(ConversationalAgent):
     def __init__(self, manifest: dict) -> None:
         super().__init__(
             name=manifest.get("name", "Agent"),
-            system_prompt=(
-                f"You are {manifest.get('name', 'an AI agent')}. "
-                f"{manifest.get('description', '')} "
-                "Answer clearly and helpfully. When you need to use a tool, "
-                "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
-            ),
+            system_prompt=_make_system_prompt(manifest),
         )
         self.manifest = manifest
 
@@ -69,16 +74,10 @@ def _build_model(manifest: dict) -> Model:
     """Create the best available real model, falling back with a clear message."""
     try:
         from core.model.factory import create_model
-        system_prompt = (
-            f"You are {manifest.get('name', 'an AI agent')}. "
-            f"{manifest.get('description', '')} "
-            "Answer clearly and helpfully."
-        )
-        return create_model(system_prompt=system_prompt)
+        return create_model(system_prompt=_make_system_prompt(manifest))
     except (RuntimeError, ImportError) as exc:
         # No API key configured – inform the operator and use the mock so that
         # the framework is still usable for local testing without credentials.
-        import warnings
         warnings.warn(
             f"No LLM API key configured ({exc}). "
             "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real model inference. "

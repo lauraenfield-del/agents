@@ -39,10 +39,11 @@ if __name__ == "__main__":
     # Single-shot mode: message passed on the command line
     if len(sys.argv) >= 3:
         user_input = " ".join(sys.argv[2:])
-        runtime.start(user_input=user_input)
         if isinstance(runtime.agent, ConversationalAgent):
             reply = runtime.agent.chat(user_input)
             print(f"{agent_name}: {reply}")
+        else:
+            runtime.start(user_input=user_input)
         sys.exit(0)
 
     # Interactive REPL mode

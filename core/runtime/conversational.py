@@ -14,6 +14,7 @@ The loop follows the standard agentic pattern:
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from core.interfaces.agent import Agent
@@ -109,7 +110,6 @@ class ConversationalAgent(Agent):
             return []
 
         results: list[tuple[str, str]] = []
-        import json as _json
 
         for line in plan_text.splitlines():
             line = line.strip()
@@ -121,7 +121,7 @@ class ConversationalAgent(Agent):
                     split_idx = after_tool.upper().index(" ARGS:")
                     tool_name = after_tool[:split_idx].strip()
                     args_str = after_tool[split_idx + 6:].strip()
-                    args = _json.loads(args_str)
+                    args = json.loads(args_str)
                 else:
                     tool_name = after_tool.strip()
                     args = {}
