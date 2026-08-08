@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 
 from core.interfaces.agent import Tool
@@ -27,9 +28,9 @@ class TerminalTool(Tool):
 
     def execute(self, command: str, cwd: str | None = None, timeout_seconds: float = 30):
         completed = subprocess.run(
-            command,
+            shlex.split(command),
             cwd=cwd,
-            shell=True,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,

@@ -107,7 +107,7 @@ def test_web_tool_fetches_and_strips_html(tool_manager, web_tool, monkeypatch):
         status = 200
         headers = {"Content-Type": "text/html"}
 
-        def read(self):
+        def read(self, size=-1):
             return b"<html><body><h1>Title</h1><p>hello world</p></body></html>"
 
         def __enter__(self):

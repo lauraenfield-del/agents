@@ -31,7 +31,7 @@ class AgentRuntime:
             self.event_bus.publish("agent.error", e)
             if raise_exceptions:
                 raise
-
-        self.logger.info("Agent runtime stopped.")
-        self.event_bus.publish("runtime.stop")
+        finally:
+            self.logger.info("Agent runtime stopped.")
+            self.event_bus.publish("runtime.stop")
         return result

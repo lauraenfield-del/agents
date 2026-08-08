@@ -60,6 +60,7 @@ class CommunicationTool(Tool):
                 smtp_username=smtp_username,
                 smtp_password=smtp_password,
                 sender=sender,
+                timeout_seconds=timeout_seconds,
             )
         raise ValueError(f"Unsupported communication channel: {channel}")
 
@@ -76,7 +77,7 @@ class CommunicationTool(Tool):
                 return {"status": "sent", "http_status": resp.status}
         except error.HTTPError as exc:
             details = exc.read().decode("utf-8", errors="replace")
-            return {"status": "error", "http_status": exc.code, "details": details}
+            return {"status": "error", "http_status": exc.code, "details": details[:2000]}
         except error.URLError as exc:
             return {"status": "error", "details": str(exc.reason)}
 
@@ -90,6 +91,7 @@ class CommunicationTool(Tool):
         smtp_username: str | None,
         smtp_password: str | None,
         sender: str | None,
+        timeout_seconds: float = 20,
     ):
         if not smtp_host or not smtp_username or not smtp_password or not sender:
             raise ValueError(
@@ -102,7 +104,7 @@ class CommunicationTool(Tool):
         email_msg["Subject"] = subject
         email_msg.set_content(message)
 
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as smtp:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=timeout_seconds) as smtp:
             smtp.starttls()
             smtp.login(smtp_username, smtp_password)
             smtp.send_message(email_msg)

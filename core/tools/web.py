@@ -1,8 +1,36 @@
 import html
+import ipaddress
 import re
+import socket
 from urllib import error, request
+from urllib.parse import urlparse
 
 from core.interfaces.agent import Tool
+
+_LOCALHOST_NAMES = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
+def _is_blocked_host(hostname: str) -> bool:
+    if hostname in _LOCALHOST_NAMES or hostname.endswith(".localhost"):
+        return True
+    try:
+        addr = ipaddress.ip_address(hostname)
+        return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved
+    except ValueError:
+        pass
+    try:
+        resolved = socket.getaddrinfo(hostname, None)
+        for _family, _type, _proto, _canonname, sockaddr in resolved:
+            ip_str = sockaddr[0]
+            try:
+                addr = ipaddress.ip_address(ip_str)
+                if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+                    return True
+            except ValueError:
+                pass
+    except OSError:
+        pass
+    return False
 
 
 class WebTool(Tool):
@@ -27,6 +55,13 @@ class WebTool(Tool):
         }
 
     def execute(self, url: str, max_chars: int = 8000):
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return {"error": "invalid_scheme", "details": "Only http and https URLs are supported."}
+        hostname = parsed.hostname or ""
+        if _is_blocked_host(hostname):
+            return {"error": "blocked_target", "details": "Access to localhost targets is not allowed."}
+
         req = request.Request(
             url,
             headers={
@@ -38,7 +73,7 @@ class WebTool(Tool):
         try:
             with request.urlopen(req, timeout=20) as resp:
                 content_type = resp.headers.get("Content-Type", "")
-                raw = resp.read()
+                raw = resp.read(max_chars * 4)
         except error.HTTPError as exc:
             details = exc.read().decode("utf-8", errors="replace")
             return {"error": f"HTTP {exc.code}", "details": details[:max_chars]}

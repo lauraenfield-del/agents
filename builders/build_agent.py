@@ -73,9 +73,11 @@ class ManifestAgent(Agent):
 TOOL_ALIASES = {
     "filesystem": "filesystem",
     "terminal": "terminal",
+    "web": "web",
     "browser": "web",
     "scraper": "web",
     "knowledge_base": "web",
+    "communication": "communication",
     "email": "communication",
     "ticketing_system": "communication",
     "social_posting": "communication",
