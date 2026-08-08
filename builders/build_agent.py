@@ -1,4 +1,7 @@
 import json
+import os
+import urllib.parse
+import urllib.request
 import warnings
 from pathlib import Path
 
@@ -57,6 +60,35 @@ _TOOL_REGISTRY: dict[str, type] = {
 }
 
 
+def _search_github_for_tool(tool_name: str, max_results: int = 3) -> list[dict[str, str]]:
+    """Search GitHub for public repositories that may implement *tool_name*.
+
+    Uses the unauthenticated GitHub Search API (60 req/h).  Returns a list of
+    dicts with ``name``, ``html_url``, and ``description`` keys.  Returns an
+    empty list on any error so callers can always iterate safely.
+    """
+    query = urllib.parse.quote_plus(f"agent tool {tool_name} python")
+    url = (
+        f"https://api.github.com/search/repositories"
+        f"?q={query}&sort=stars&order=desc&per_page={max_results}"
+    )
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "agents-framework/1.0"}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return [
+            {
+                "name": item.get("full_name", ""),
+                "html_url": item.get("html_url", ""),
+                "description": item.get("description") or "",
+            }
+            for item in data.get("items", [])[:max_results]
+        ]
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]) -> None:
     registered: set[str] = set()
     for tool_name in tool_names:
@@ -68,13 +100,22 @@ def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]) -> N
                 tool_manager.register_tool(instance)
                 registered.add(instance.name)
         else:
-            warnings.warn(
+            msg = (
                 f"Manifest references unknown tool '{tool_name}'. "
                 "This tool will not be available at runtime. "
-                "Check the tool name or register a custom implementation.",
-                RuntimeWarning,
-                stacklevel=2,
+                "Check the tool name or register a custom implementation."
             )
+            if os.getenv("AGENT_TOOL_SEARCH", "").strip().lower() in ("1", "true", "yes"):
+                suggestions = _search_github_for_tool(tool_name)
+                if suggestions:
+                    lines = [f"  • {s['name']} – {s['html_url']}" for s in suggestions]
+                    msg += (
+                        "\n  GitHub search found these candidate repositories:\n"
+                        + "\n".join(lines)
+                    )
+                else:
+                    msg += "\n  GitHub search returned no results for this tool name."
+            warnings.warn(msg, RuntimeWarning, stacklevel=2)
 
 
 def _build_model(manifest: dict) -> Model:
