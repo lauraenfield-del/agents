@@ -287,10 +287,10 @@ python run_agent.py customer_support
 **Expected output (autonomous example):**
 
 ```
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
 Building agent from package: autonomous
 Starting agent: Autonomous Agent
+{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
+{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
 Agent finished.
 ```
 
