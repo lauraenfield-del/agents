@@ -4,6 +4,7 @@ from email.message import EmailMessage
 from urllib import error, request
 
 from core.interfaces.agent import Tool
+from core.tools.web import _validate_url_for_ssrf, build_ssrf_safe_opener
 
 
 class CommunicationTool(Tool):
@@ -65,6 +66,10 @@ class CommunicationTool(Tool):
         raise ValueError(f"Unsupported communication channel: {channel}")
 
     def _send_webhook(self, target: str, message: str, timeout_seconds: float):
+        err = _validate_url_for_ssrf(target)
+        if err:
+            return {"status": "error", "details": f"Blocked target: {err}"}
+
         payload = json.dumps({"message": message}).encode("utf-8")
         req = request.Request(
             target,
@@ -72,8 +77,9 @@ class CommunicationTool(Tool):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        opener = build_ssrf_safe_opener()
         try:
-            with request.urlopen(req, timeout=timeout_seconds) as resp:
+            with opener.open(req, timeout=timeout_seconds) as resp:
                 return {"status": "sent", "http_status": resp.status}
         except error.HTTPError as exc:
             details = exc.read().decode("utf-8", errors="replace")

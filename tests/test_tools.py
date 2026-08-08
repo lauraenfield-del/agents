@@ -116,7 +116,11 @@ def test_web_tool_fetches_and_strips_html(tool_manager, web_tool, monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-    monkeypatch.setattr("core.tools.web.request.urlopen", lambda *args, **kwargs: DummyResponse())
+    class DummyOpener:
+        def open(self, *args, **kwargs):
+            return DummyResponse()
+
+    monkeypatch.setattr("core.tools.web.build_ssrf_safe_opener", lambda: DummyOpener())
     tool_manager.register_tool(web_tool)
     result = tool_manager.execute_tool("web", url="https://example.com")
     assert "Title" in result["text"]
@@ -133,8 +137,12 @@ def test_communication_webhook_success(tool_manager, communication_tool, monkeyp
         def __exit__(self, exc_type, exc, tb):
             return False
 
+    class DummyOpener:
+        def open(self, *args, **kwargs):
+            return DummyResponse()
+
     monkeypatch.setattr(
-        "core.tools.communication.request.urlopen", lambda *args, **kwargs: DummyResponse()
+        "core.tools.communication.build_ssrf_safe_opener", lambda: DummyOpener()
     )
     tool_manager.register_tool(communication_tool)
     result = tool_manager.execute_tool(

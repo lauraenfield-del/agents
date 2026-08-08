@@ -33,6 +33,32 @@ def _is_blocked_host(hostname: str) -> bool:
     return False
 
 
+def _validate_url_for_ssrf(url: str) -> str | None:
+    """Return an error string if the URL fails SSRF validation, else None."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return "Only http and https URLs are supported."
+    hostname = parsed.hostname or ""
+    if _is_blocked_host(hostname):
+        return "Access to localhost/private targets is not allowed."
+    return None
+
+
+class _SSRFSafeRedirectHandler(request.HTTPRedirectHandler):
+    """Redirect handler that validates every redirect destination against SSRF rules."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        err = _validate_url_for_ssrf(newurl)
+        if err:
+            raise error.URLError(f"Redirect blocked (SSRF): {err}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def build_ssrf_safe_opener() -> request.OpenerDirector:
+    """Return a urllib opener that validates every redirect against SSRF rules."""
+    return request.build_opener(_SSRFSafeRedirectHandler)
+
+
 class WebTool(Tool):
     @property
     def name(self) -> str:
@@ -55,12 +81,9 @@ class WebTool(Tool):
         }
 
     def execute(self, url: str, max_chars: int = 8000):
-        parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
-            return {"error": "invalid_scheme", "details": "Only http and https URLs are supported."}
-        hostname = parsed.hostname or ""
-        if _is_blocked_host(hostname):
-            return {"error": "blocked_target", "details": "Access to localhost targets is not allowed."}
+        err = _validate_url_for_ssrf(url)
+        if err:
+            return {"error": "blocked_target", "details": err}
 
         req = request.Request(
             url,
@@ -70,8 +93,9 @@ class WebTool(Tool):
             },
             method="GET",
         )
+        opener = build_ssrf_safe_opener()
         try:
-            with request.urlopen(req, timeout=20) as resp:
+            with opener.open(req, timeout=20) as resp:
                 content_type = resp.headers.get("Content-Type", "")
                 raw = resp.read(max_chars * 4)
         except error.HTTPError as exc:
