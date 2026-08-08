@@ -56,8 +56,18 @@ class WebTool(Tool):
         }
 
     def _html_to_text(self, html_text: str) -> str:
-        no_script = re.sub(r"<script[\s\S]*?</script>", " ", html_text, flags=re.IGNORECASE)
-        no_style = re.sub(r"<style[\s\S]*?</style>", " ", no_script, flags=re.IGNORECASE)
+        no_script = re.sub(
+            r"<script\b[\s\S]*?</script(?:\s+[^>]*)?\s*>",
+            " ",
+            html_text,
+            flags=re.IGNORECASE,
+        )
+        no_style = re.sub(
+            r"<style\b[\s\S]*?</style(?:\s+[^>]*)?\s*>",
+            " ",
+            no_script,
+            flags=re.IGNORECASE,
+        )
         no_tags = re.sub(r"<[^>]+>", " ", no_style)
         unescaped = html.unescape(no_tags)
         normalized = re.sub(r"\s+", " ", unescaped)
