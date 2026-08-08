@@ -1,57 +1,93 @@
 import json
+import os
 from pathlib import Path
 
 from builders.validate_package import validate_package
 from core.events.bus import EventBus
-from core.interfaces.agent import Agent, Tool
+from core.interfaces.agent import Agent, Model, Tool
 from core.memory.simple import SimpleMemory
-from core.model.mock import MockModel
 from core.runtime.agent import AgentRuntime
+from core.runtime.conversational import ConversationalAgent
 from core.tools.filesystem import FileSystemTool
 from core.tools.manager import ToolManager
+from core.tools.search import WebSearchTool
+from core.tools.terminal import TerminalTool
+from core.tools.think import SequentialThinkingTool
+from core.tools.web import WebFetchTool
 
 
-class ManifestAgent(Agent):
-    def __init__(self, manifest: dict):
+class ManifestAgent(ConversationalAgent):
+    """Agent loaded from a package manifest.
+
+    Inherits the full :class:`ConversationalAgent` capability so that every
+    manifest-driven agent can chat naturally and use the Input→Plan→Act→Review
+    loop out of the box.
+    """
+
+    def __init__(self, manifest: dict) -> None:
+        super().__init__(
+            name=manifest.get("name", "Agent"),
+            system_prompt=(
+                f"You are {manifest.get('name', 'an AI agent')}. "
+                f"{manifest.get('description', '')} "
+                "Answer clearly and helpfully. When you need to use a tool, "
+                "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
+            ),
+        )
         self.manifest = manifest
 
-    def run(self, *args, **kwargs):
-        return {
-            "name": self.manifest["name"],
-            "workflow": self.manifest["entrypoint"]["workflow"],
-        }
+
+# ---------------------------------------------------------------------------
+# Tool registry helpers
+# ---------------------------------------------------------------------------
+
+_TOOL_REGISTRY: dict[str, type] = {
+    "filesystem": FileSystemTool,
+    "web_fetch": WebFetchTool,
+    "web_search": WebSearchTool,
+    "think": SequentialThinkingTool,
+    "terminal": TerminalTool,
+    # "browser" is an alias for web_fetch for manifest compatibility
+    "browser": WebFetchTool,
+}
 
 
-class _UnknownTool(Tool):
-    """Placeholder for manifest tools that have no registered implementation."""
-
-    def __init__(self, tool_name: str):
-        self._name = tool_name
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def description(self) -> str:
-        return f"Unimplemented tool: {self._name}"
-
-    @property
-    def schema(self) -> dict:
-        return {}
-
-    def execute(self, *args, **kwargs):
-        raise NotImplementedError(
-            f"Tool '{self._name}' is declared in the manifest but has no registered implementation."
-        )
-
-
-def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]):
+def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]) -> None:
+    registered: set[str] = set()
     for tool_name in tool_names:
-        if tool_name == "filesystem":
-            tool_manager.register_tool(FileSystemTool())
-        else:
-            tool_manager.register_tool(_UnknownTool(tool_name))
+        tool_cls = _TOOL_REGISTRY.get(tool_name)
+        if tool_cls is not None:
+            instance = tool_cls()
+            # Avoid registering duplicate canonical names
+            if instance.name not in registered:
+                tool_manager.register_tool(instance)
+                registered.add(instance.name)
+        # Unknown tools are silently skipped; the manifest is still valid.
+
+
+def _build_model(manifest: dict) -> Model:
+    """Create the best available real model, falling back with a clear message."""
+    try:
+        from core.model.factory import create_model
+        system_prompt = (
+            f"You are {manifest.get('name', 'an AI agent')}. "
+            f"{manifest.get('description', '')} "
+            "Answer clearly and helpfully."
+        )
+        return create_model(system_prompt=system_prompt)
+    except (RuntimeError, ImportError) as exc:
+        # No API key configured – inform the operator and use the mock so that
+        # the framework is still usable for local testing without credentials.
+        import warnings
+        warnings.warn(
+            f"No LLM API key configured ({exc}). "
+            "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real model inference. "
+            "Falling back to MockModel for now.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        from core.model.mock import MockModel
+        return MockModel()
 
 
 def build_agent(package_dir: str | Path) -> AgentRuntime:
@@ -64,7 +100,7 @@ def build_agent(package_dir: str | Path) -> AgentRuntime:
         event_bus=EventBus(),
         tool_manager=tool_manager,
         memory=SimpleMemory(),
-        model=MockModel(),
+        model=_build_model(manifest),
     )
 
 
