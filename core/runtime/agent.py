@@ -21,13 +21,16 @@ class AgentRuntime:
         self.logger.info("Agent runtime starting.")
         self.event_bus.publish("runtime.start")
 
+        success = False
         try:
             self.event_bus.publish("agent.run.before")
             self.agent.run(*args, **kwargs)
             self.event_bus.publish("agent.run.after")
+            success = True
         except Exception as e:
             self.logger.exception(f"An error occurred during agent execution: {e}")
             self.event_bus.publish("agent.error", e)
 
         self.logger.info("Agent runtime stopped.")
         self.event_bus.publish("runtime.stop")
+        return success

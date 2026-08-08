@@ -291,7 +291,7 @@ Building agent from package: autonomous
 Starting agent: Autonomous Agent
 {"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
 {"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
-Agent finished.
+Agent finished successfully.
 ```
 
 The runtime:
@@ -404,7 +404,7 @@ python run_agent.py my_agent
 ```
 Building agent from package: my_agent
 Starting agent: My Agent
-Agent finished.
+Agent finished successfully.
 ```
 
 ---
