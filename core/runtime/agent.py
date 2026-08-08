@@ -17,17 +17,21 @@ class AgentRuntime:
         self.agent.memory = self.memory
         self.agent.model = self.model
 
-    def start(self, *args, **kwargs):
+    def start(self, *args, raise_exceptions: bool = False, **kwargs):
         self.logger.info("Agent runtime starting.")
         self.event_bus.publish("runtime.start")
+        result = None
 
         try:
             self.event_bus.publish("agent.run.before")
-            self.agent.run(*args, **kwargs)
+            result = self.agent.run(*args, **kwargs)
             self.event_bus.publish("agent.run.after")
         except Exception as e:
             self.logger.exception(f"An error occurred during agent execution: {e}")
             self.event_bus.publish("agent.error", e)
+            if raise_exceptions:
+                raise
 
         self.logger.info("Agent runtime stopped.")
         self.event_bus.publish("runtime.stop")
+        return result

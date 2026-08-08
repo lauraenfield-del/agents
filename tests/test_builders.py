@@ -7,6 +7,8 @@ from builders.build_agent import build_agent, load_registered_packages
 from builders.generate_package import generate_package
 from builders.register_package import register_package
 from builders.validate_package import load_package_manifest, validate_package
+from core.model.mock import MockModel
+from core.model.openai_compatible import OpenAICompatibleModel
 from core.runtime.agent import AgentRuntime
 
 PACKAGES_DIR = Path(__file__).parent.parent / "packages"
@@ -37,6 +39,8 @@ def test_build_agent_creates_runtime_with_known_tools():
 
     assert isinstance(runtime, AgentRuntime)
     assert "filesystem" in runtime.tool_manager.list_tools()
+    assert "terminal" in runtime.tool_manager.list_tools()
+    assert "web" in runtime.tool_manager.list_tools()
 
 
 def test_generate_package_writes_manifest(tmp_path):
@@ -69,3 +73,39 @@ def test_validate_package_rejects_missing_fields(tmp_path):
 
 def test_load_registered_packages_missing_registry(tmp_path):
     assert load_registered_packages(tmp_path / "missing.json") == {}
+
+
+def test_build_agent_uses_live_model_by_default():
+    runtime = build_agent(PACKAGES_DIR / "coding")
+    assert isinstance(runtime.model, OpenAICompatibleModel)
+
+
+def test_build_agent_uses_mock_model_when_enabled(monkeypatch):
+    monkeypatch.setenv("AGENTS_USE_MOCK_MODEL", "true")
+    runtime = build_agent(PACKAGES_DIR / "coding")
+    assert isinstance(runtime.model, MockModel)
+
+
+def test_build_agent_rejects_unimplemented_tools(tmp_path):
+    package_dir = tmp_path / "unsupported_tool_agent"
+    manifest = {
+        "name": "Unsupported Tool Agent",
+        "version": "1.0.0",
+        "inherits": "core",
+        "description": "Agent with unsupported tool",
+        "tools": ["made_up_tool"],
+        "workflows": ["planning"],
+        "knowledge": ["none"],
+        "entrypoint": {"workflow": "unsupported_controller"},
+    }
+    generate_package(package_dir, manifest)
+
+    with pytest.raises(ValueError, match="no implementation is available"):
+        build_agent(package_dir)
+
+
+def test_manifest_agent_runtime_returns_model_response(monkeypatch):
+    monkeypatch.setenv("AGENTS_USE_MOCK_MODEL", "true")
+    runtime = build_agent(PACKAGES_DIR / "research")
+    result = runtime.start(user_input="Summarize this request.")
+    assert "Original request: Summarize this request." in result

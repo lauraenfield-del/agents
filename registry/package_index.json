@@ -1,1 +1,44 @@
-{}
+{
+  "autonomous": {
+    "description": "Long-running autonomous task execution agent",
+    "entrypoint": "autonomous_controller",
+    "name": "Autonomous Agent",
+    "path": "packages/autonomous",
+    "version": "1.0.0"
+  },
+  "coding": {
+    "description": "Agent specialized in code generation, modification, and review.",
+    "entrypoint": "coding_controller",
+    "name": "Coding Agent",
+    "path": "packages/coding",
+    "version": "1.0.0"
+  },
+  "customer_support": {
+    "description": "Agent for handling customer support inquiries and issues.",
+    "entrypoint": "customer_support_controller",
+    "name": "Customer Support Agent",
+    "path": "packages/customer_support",
+    "version": "1.0.0"
+  },
+  "marketing": {
+    "description": "Agent for marketing campaign management and analysis.",
+    "entrypoint": "marketing_controller",
+    "name": "Marketing Agent",
+    "path": "packages/marketing",
+    "version": "1.0.0"
+  },
+  "research": {
+    "description": "Research-focused agent for information gathering and analysis.",
+    "entrypoint": "research_controller",
+    "name": "Research Agent",
+    "path": "packages/research",
+    "version": "1.0.0"
+  },
+  "social_media": {
+    "description": "Agent for managing and automating social media interactions.",
+    "entrypoint": "social_media_controller",
+    "name": "Social Media Agent",
+    "path": "packages/social_media",
+    "version": "1.0.0"
+  }
+}

@@ -63,10 +63,10 @@ core/
 ├── interfaces/    Abstract base classes (Agent, Tool, Memory, Model)
 ├── logging/       Structured logger factory
 ├── memory/        In-process memory store (SimpleMemory)
-├── model/         Model abstraction + MockModel for local testing
+├── model/         Model abstraction + OpenAI-compatible live model client
 ├── orchestration/ Workflow coordination
 ├── runtime/       AgentRuntime — the main execution engine
-├── tools/         Built-in tools (FileSystemTool) + ToolManager
+├── tools/         Built-in tools (filesystem, terminal, web, communication, sequential thinking)
 └── validation/    Schema and manifest validation helpers
 ```
 
@@ -261,27 +261,27 @@ All commands must be run from the **root of the repository** with the virtual en
 
 ### Option A — run\_agent.py (recommended)
 
-`run_agent.py` is the standard CLI entry point. Pass it the name of any package in the `packages/` directory.
+`run_agent.py` is the standard CLI entry point. Pass a package name and a user request.
 
 **Run the autonomous agent:**
 
 ```bash
-python run_agent.py autonomous
+python run_agent.py autonomous "Find the latest notes from example.com and summarize them."
 ```
 
 **Run the research agent:**
 
 ```bash
-python run_agent.py research
+python run_agent.py research "Gather key points about zero-trust architecture."
 ```
 
 **Run any other package** by substituting its directory name:
 
 ```bash
-python run_agent.py coding
-python run_agent.py marketing
-python run_agent.py social_media
-python run_agent.py customer_support
+python run_agent.py coding "Refactor this function for readability."
+python run_agent.py marketing "Draft a launch announcement."
+python run_agent.py social_media "Write a short post for product update."
+python run_agent.py customer_support "Respond to a customer asking about billing."
 ```
 
 **Expected output (autonomous example):**
@@ -293,6 +293,14 @@ Starting agent: Autonomous Agent
 {"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
 Agent finished.
 ```
+
+The default model client is OpenAI-compatible and reads:
+
+- `OPENAI_API_KEY` or `AGENTS_MODEL_API_KEY`
+- Optional `AGENTS_MODEL_NAME` (default: `gpt-4.1-mini`)
+- Optional `AGENTS_MODEL_API_BASE` (default: `https://api.openai.com/v1`)
+
+For local tests and demo usage only, set `AGENTS_USE_MOCK_MODEL=true` to force `MockModel`.
 
 The runtime:
 
