@@ -11,10 +11,13 @@ requirements.txt if missing).
 from __future__ import annotations
 
 import html
+import os
 from html.parser import HTMLParser
+from urllib.parse import urlparse
 
 from core.interfaces.agent import Tool
 
+_BLOCKED_HOSTS: frozenset[str] = frozenset({"localhost", "127.0.0.1", "::1", "0.0.0.0"})
 
 class _TextExtractor(HTMLParser):
     """Minimal HTML-to-text converter (no external deps)."""
@@ -79,6 +82,18 @@ class WebFetchTool(Tool):
         }
 
     def execute(self, url: str, as_html: bool = False, timeout: int = 15) -> str:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return f"Error: Only http and https URLs are supported, got scheme '{parsed.scheme}'."
+
+        hostname = (parsed.hostname or "").lower()
+        allow_local = os.getenv("AGENT_WEB_ALLOW_LOCALHOST", "").strip().lower() in ("1", "true", "yes")
+        if not allow_local and (hostname in _BLOCKED_HOSTS or hostname.endswith(".localhost")):
+            return (
+                f"Error: Fetching local/loopback addresses is blocked by default. "
+                "Set AGENT_WEB_ALLOW_LOCALHOST=1 to override."
+            )
+
         try:
             import requests  # type: ignore
         except ImportError as exc:

@@ -67,7 +67,14 @@ def _register_known_tools(tool_manager: ToolManager, tool_names: list[str]) -> N
             if instance.name not in registered:
                 tool_manager.register_tool(instance)
                 registered.add(instance.name)
-        # Unknown tools are silently skipped; the manifest is still valid.
+        else:
+            warnings.warn(
+                f"Manifest references unknown tool '{tool_name}'. "
+                "This tool will not be available at runtime. "
+                "Check the tool name or register a custom implementation.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
 
 def _build_model(manifest: dict) -> Model:
@@ -75,7 +82,7 @@ def _build_model(manifest: dict) -> Model:
     try:
         from core.model.factory import create_model
         return create_model(system_prompt=_make_system_prompt(manifest))
-    except (RuntimeError, ImportError) as exc:
+    except RuntimeError as exc:
         # No API key configured – inform the operator and use the mock so that
         # the framework is still usable for local testing without credentials.
         warnings.warn(

@@ -47,7 +47,7 @@ class OpenAIModel(Model):
             model=self._model,
             messages=messages,
         )
-        reply = response.choices[0].message.content
+        reply = response.choices[0].message.content or ""
         self._history.append({"role": "assistant", "content": reply})
         return reply
 

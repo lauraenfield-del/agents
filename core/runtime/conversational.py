@@ -87,7 +87,7 @@ class ConversationalAgent(Agent):
             final_response = self.model.generate(review_prompt)
         else:
             # No tools used; the plan response already answers the user.
-            final_response = self.model.generate(user_input)
+            final_response = plan_response
 
         self._logger.debug("Response: %s", final_response)
         return final_response
@@ -126,6 +126,7 @@ class ConversationalAgent(Agent):
                     tool_name = after_tool.strip()
                     args = {}
 
+                tool_name = tool_name.lower()
                 if tool_name in self.tools.list_tools():
                     self._logger.info("Executing tool: %s", tool_name)
                     result = self.tools.execute_tool(tool_name, **args)

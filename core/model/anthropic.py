@@ -48,7 +48,7 @@ class AnthropicModel(Model):
             system=self._system_prompt,
             messages=self._history,
         )
-        reply = response.content[0].text
+        reply = (response.content[0].text if response.content else "") or ""
         self._history.append({"role": "assistant", "content": reply})
         return reply
 

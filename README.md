@@ -251,7 +251,7 @@ Set **one** of the following environment variables before running any agent:
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` | `OPENAI_MODEL` |
 | `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` | `ANTHROPIC_MODEL` |
 
-**macOS / Linux / Windows (PowerShell):**
+**macOS / Linux:**
 
 ```bash
 export OPENAI_API_KEY=sk-...          # use your real key
@@ -259,11 +259,26 @@ export OPENAI_API_KEY=sk-...          # use your real key
 export ANTHROPIC_API_KEY=sk-ant-...   # use your real key
 ```
 
-**Optional — override the default model:**
+**Windows (PowerShell):**
+
+```powershell
+$env:OPENAI_API_KEY = "sk-..."          # use your real key
+# or
+$env:ANTHROPIC_API_KEY = "sk-ant-..."   # use your real key
+```
+
+**Optional — override the default model (macOS / Linux):**
 
 ```bash
 export OPENAI_MODEL=gpt-4o            # any OpenAI model name
 export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+**Optional — override the default model (Windows PowerShell):**
+
+```powershell
+$env:OPENAI_MODEL = "gpt-4o"
+$env:ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
 ```
 
 If neither key is set, `build_agent` falls back to `MockModel` and emits a

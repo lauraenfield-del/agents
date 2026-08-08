@@ -8,7 +8,7 @@ Safety controls:
 * Commands are executed with a configurable timeout (default 30 s).
 * A configurable allow-list (``AGENT_TERMINAL_ALLOW_CMDS`` env var,
   space-separated) can restrict which command prefixes are permitted.
-  When the env var is not set, any command is allowed.
+  When the env var is not set, all command execution is disabled.
 * The working directory defaults to the current directory but can be
   overridden per call via the ``cwd`` parameter.
 """
@@ -66,13 +66,18 @@ class TerminalTool(Tool):
             return "No command provided."
 
         allow_env = os.getenv("AGENT_TERMINAL_ALLOW_CMDS", "").strip()
-        if allow_env:
-            allowed = allow_env.split()
-            if args[0] not in allowed:
-                return (
-                    f"Command '{args[0]}' is not in the allowed command list. "
-                    f"Allowed: {', '.join(allowed)}"
-                )
+        if not allow_env:
+            return (
+                "Command execution is disabled. "
+                "Set AGENT_TERMINAL_ALLOW_CMDS to a space-separated list of permitted "
+                "commands to enable the terminal tool."
+            )
+        allowed = allow_env.split()
+        if args[0] not in allowed:
+            return (
+                f"Command '{args[0]}' is not in the allowed command list. "
+                f"Allowed: {', '.join(allowed)}"
+            )
 
         try:
             result = subprocess.run(
