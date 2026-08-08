@@ -18,5 +18,4 @@ if __name__ == "__main__":
     runtime = build_agent(package_dir)
 
     print(f"Starting agent: {runtime.agent.manifest['name']}")
-    result = runtime.run()
     print(f"Agent finished with result: {result}")
