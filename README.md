@@ -79,8 +79,9 @@ AgentRuntime(agent, event_bus, tool_manager, memory, model)
               │
               ├── event_bus.publish("runtime.start")
               ├── event_bus.publish("agent.run.before")
-              ├── agent.run()              ← the package's entrypoint
-              ├── event_bus.publish("agent.run.after")
+              ├── agent.run()                    ← the package's entrypoint
+              ├── event_bus.publish("agent.run.after")   (only if agent.run succeeds)
+              ├── event_bus.publish("agent.error", e)    (if agent.run raises)
               └── event_bus.publish("runtime.stop")
 ```
 
