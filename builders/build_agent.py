@@ -131,7 +131,7 @@ def _build_model(manifest: dict) -> Model:
             "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real model inference. "
             "Falling back to MockModel for now.",
             RuntimeWarning,
-            stacklevel=3,
+            stacklevel=2,
         )
         from core.model.mock import MockModel
         return MockModel()
