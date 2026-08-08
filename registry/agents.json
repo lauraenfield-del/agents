@@ -1,1 +1,44 @@
-{}
+{
+  "autonomous": {
+    "name": "Autonomous Agent",
+    "description": "Long-running autonomous task execution agent capable of planning, acting, and reviewing multi-step tasks.",
+    "package": "packages/autonomous",
+    "tools": ["filesystem", "terminal", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "coding": {
+    "name": "Coding Agent",
+    "description": "Agent specialized in code generation, modification, review, and debugging.",
+    "package": "packages/coding",
+    "tools": ["filesystem", "terminal", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "customer_support": {
+    "name": "Customer Support Agent",
+    "description": "Agent for handling customer support inquiries, resolving issues, and providing helpful responses.",
+    "package": "packages/customer_support",
+    "tools": ["filesystem", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "marketing": {
+    "name": "Marketing Agent",
+    "description": "Agent for marketing campaign planning, lead generation, and performance analysis.",
+    "package": "packages/marketing",
+    "tools": ["filesystem", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "research": {
+    "name": "Research Agent",
+    "description": "Research-focused agent for information gathering, web research, and in-depth analysis.",
+    "package": "packages/research",
+    "tools": ["filesystem", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "social_media": {
+    "name": "Social Media Agent",
+    "description": "Agent for managing social media strategy, content creation, scheduling, and engagement.",
+    "package": "packages/social_media",
+    "tools": ["filesystem", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  }
+}
