@@ -119,11 +119,11 @@ class ConversationalAgent(Agent):
                 after_tool = line[5:]  # strip "TOOL:"
                 if " ARGS:" in after_tool.upper():
                     split_idx = after_tool.upper().index(" ARGS:")
-                    tool_name = after_tool[:split_idx].strip()
+                    tool_name = after_tool[:split_idx].strip().lower()
                     args_str = after_tool[split_idx + 6:].strip()
                     args = json.loads(args_str)
                 else:
-                    tool_name = after_tool.strip()
+                    tool_name = after_tool.strip().lower()
                     args = {}
 
                 tool_name = tool_name.lower()
