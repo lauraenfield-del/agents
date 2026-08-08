@@ -7,7 +7,7 @@
     "version": "1.0.0"
   },
   "coding": {
-    "description": "Agent specialized in code generation, modification, review, and debugging.",
+    "description": "Expert software developer and Python specialist with deep knowledge of Python 3.x, software engineering principles, design patterns, testing, security, and CI/CD integration.",
     "entrypoint": "coding_controller",
     "name": "Coding Agent",
     "path": "packages/coding",

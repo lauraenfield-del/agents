@@ -241,7 +241,36 @@ This installs:
 | `jsonschema` | JSON schema validation |
 | `PyYAML` | YAML manifest parsing |
 
-### 5. Verify the installation
+### 5. Configure LLM credentials
+
+The framework auto-selects a real LLM provider based on which API key is set.
+Set **one** of the following environment variables before running any agent:
+
+| Variable | Provider | Default model | Model override |
+|---|---|---|---|
+| `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` | `OPENAI_MODEL` |
+| `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` | `ANTHROPIC_MODEL` |
+
+**macOS / Linux / Windows (PowerShell):**
+
+```bash
+export OPENAI_API_KEY=sk-...          # use your real key
+# or
+export ANTHROPIC_API_KEY=sk-ant-...   # use your real key
+```
+
+**Optional — override the default model:**
+
+```bash
+export OPENAI_MODEL=gpt-4o            # any OpenAI model name
+export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+If neither key is set, `build_agent` falls back to `MockModel` and emits a
+`RuntimeWarning`. This is intentional so that tests and local exploration work
+without credentials.
+
+### 6. Verify the installation
 
 ```bash
 python -c "from builders.build_agent import build_agent; print('Setup OK')"
