@@ -4,7 +4,7 @@ Thanks for helping improve this repository.
 
 ## Before you start
 
-- Read `/home/runner/work/agents/agents/README.md` for the project layout and setup steps.
+- Read `README.md` for the project layout and setup steps.
 - Check for existing issues or discussions before starting new work.
 - Prefer small, focused pull requests.
 
@@ -46,4 +46,4 @@ If you changed only a narrow area, also run the most relevant targeted tests whe
 
 Do not include secrets, API keys, tokens, or private credentials in code, tests, screenshots, or logs.
 
-If you discover a security issue, follow `/home/runner/work/agents/agents/SECURITY.md` instead of opening a public issue.
+If you discover a security issue, follow `SECURITY.md` instead of opening a public issue.
