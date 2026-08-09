@@ -44,7 +44,9 @@ if __name__ == "__main__":
             reply = runtime.agent.chat(user_input)
             print(f"{agent_name}: {reply}")
         else:
-            runtime.start(user_input=user_input)
+            success = runtime.start(user_input=user_input)
+            if not success:
+                sys.exit(1)
         sys.exit(0)
 
     # Interactive REPL mode
