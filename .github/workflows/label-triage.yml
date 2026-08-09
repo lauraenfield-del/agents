@@ -53,13 +53,13 @@ jobs:
               { owner, repo, per_page: 100 }
             )) {
               for (const label of response.data) {
-                existingLabels.add(label.name);
+                existingLabels.add(label.name.toLowerCase());
               }
-              if (standardLabels.every((l) => existingLabels.has(l.name))) break;
+              if (standardLabels.every((l) => existingLabels.has(l.name.toLowerCase()))) break;
             }
 
             for (const label of standardLabels) {
-              if (!existingLabels.has(label.name)) {
+              if (!existingLabels.has(label.name.toLowerCase())) {
                 await github.rest.issues.createLabel({ owner, repo, ...label });
               }
             }
