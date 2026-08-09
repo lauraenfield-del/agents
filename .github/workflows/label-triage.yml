@@ -20,17 +20,15 @@ permissions:
   pull-requests: write
 
 jobs:
-  label-issue:
-    if: github.event_name == 'issues'
+  sync-labels:
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure standard labels and label issue
+      - name: Ensure standard labels exist
         uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const issue = context.payload.issue;
 
             const standardLabels = [
               { name: 'needs-triage', color: 'D4C5F9', description: 'Awaiting maintainer triage' },
@@ -38,66 +36,6 @@ jobs:
               { name: 'enhancement', color: 'A2EEEF', description: 'New feature or request' },
               { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
               { name: 'question', color: '7057FF', description: 'Further information is requested' },
-              { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
-              { name: 'dependencies', color: '0366D6', description: 'Dependency updates or maintenance' },
-              { name: 'github-actions', color: '5319E7', description: 'GitHub Actions or workflow changes' },
-            ];
-
-            for (const label of standardLabels) {
-              try {
-                await github.rest.issues.getLabel({ owner, repo, name: label.name });
-              } catch (error) {
-                if (error.status !== 404) throw error;
-                await github.rest.issues.createLabel({ owner, repo, ...label });
-              }
-            }
-
-            const text = `${issue.title}\n${issue.body || ''}`.toLowerCase();
-            const labels = new Set(['needs-triage']);
-
-            if (text.includes('[bug]') || text.includes('bug') || text.includes('error') || text.includes('traceback') || text.includes('failure')) {
-              labels.add('bug');
-            }
-            if (text.includes('[feature]') || text.includes('feature') || text.includes('enhancement') || text.includes('proposal')) {
-              labels.add('enhancement');
-            }
-            if (text.includes('docs') || text.includes('documentation') || text.includes('readme')) {
-              labels.add('documentation');
-            }
-            if (text.includes('question') || text.includes('how do i') || text.includes('how to')) {
-              labels.add('question');
-            }
-            if (text.includes('test') || text.includes('pytest')) {
-              labels.add('tests');
-            }
-            if (text.includes('dependency') || text.includes('requirements.txt') || text.includes('package version')) {
-              labels.add('dependencies');
-            }
-            if (text.includes('workflow') || text.includes('github actions') || text.includes('ci')) {
-              labels.add('github-actions');
-            }
-
-            await github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number: issue.number,
-              labels: Array.from(labels),
-            });
-
-  label-pr:
-    if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ensure standard labels and label pull request
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const pull = context.payload.pull_request;
-
-            const standardLabels = [
-              { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
               { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
               { name: 'dependencies', color: '0366D6', description: 'Dependency updates or maintenance' },
               { name: 'github-actions', color: '5319E7', description: 'GitHub Actions or workflow changes' },
@@ -117,6 +55,65 @@ jobs:
               }
             }
 
+  label-issue:
+    if: github.event_name == 'issues'
+    needs: sync-labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue = context.payload.issue;
+
+            const text = `${issue.title}\n${issue.body || ''}`.toLowerCase();
+            const labels = new Set(['needs-triage']);
+            const hasWord = (pattern) => pattern.test(text);
+
+            if (hasWord(/\[bug\]|\bbug\b|\berror\b|\btraceback\b|\bfailure\b/)) {
+              labels.add('bug');
+            }
+            if (hasWord(/\[feature\]|\bfeature\b|\benhancement\b|\bproposal\b/)) {
+              labels.add('enhancement');
+            }
+            if (hasWord(/\bdocs\b|\bdocumentation\b|\breadme\b/)) {
+              labels.add('documentation');
+            }
+            if (hasWord(/\bquestion\b|\bhow do i\b|\bhow to\b/)) {
+              labels.add('question');
+            }
+            if (hasWord(/\btest(?:s|ing)?\b|\bpytest\b/)) {
+              labels.add('tests');
+            }
+            if (hasWord(/\bdependency\b|\brequirements\.txt\b|\bpackage version\b/)) {
+              labels.add('dependencies');
+            }
+            if (hasWord(/\bworkflow\b|\bgithub actions\b|\bci\b/)) {
+              labels.add('github-actions');
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: Array.from(labels),
+            });
+
+  label-pr:
+    if: github.event_name == 'pull_request_target'
+    needs: sync-labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull = context.payload.pull_request;
+
             const files = await github.paginate(
               github.rest.pulls.listFiles,
               { owner, repo, pull_number: pull.number, per_page: 100 }
@@ -129,8 +126,7 @@ jobs:
                 name.startsWith('.github/ISSUE_TEMPLATE/') ||
                 name.startsWith('.github/DISCUSSION_TEMPLATE/') ||
                 name === '.github/pull_request_template.md' ||
-                name === '.github/CODEOWNERS' ||
-                name === '.github/FUNDING.yml';
+                name === '.github/CODEOWNERS';
               if (name.startsWith('core/')) labels.add('core');
               if (name.startsWith('builders/')) labels.add('builders');
               if (name.startsWith('packages/')) labels.add('packages');

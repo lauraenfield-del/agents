@@ -209,7 +209,6 @@ Contributor-facing guidance is available in:
 - `.github/ISSUE_TEMPLATE/`
 - `.github/DISCUSSION_TEMPLATE/`
 - `.github/CODEOWNERS`
-- `.github/FUNDING.yml`
 - `.github/workflows/label-triage.yml`
 
 ## Notes on `skills/`
