@@ -125,6 +125,12 @@ jobs:
             const labels = new Set();
             for (const file of files) {
               const name = file.filename;
+              const isGithubDocs =
+                name.startsWith('.github/ISSUE_TEMPLATE/') ||
+                name.startsWith('.github/DISCUSSION_TEMPLATE/') ||
+                name === '.github/pull_request_template.md' ||
+                name === '.github/CODEOWNERS' ||
+                name === '.github/FUNDING.yml';
               if (name.startsWith('core/')) labels.add('core');
               if (name.startsWith('builders/')) labels.add('builders');
               if (name.startsWith('packages/')) labels.add('packages');
@@ -133,7 +139,7 @@ jobs:
               if (name.startsWith('.github/workflows/')) labels.add('github-actions');
               if (name === 'requirements.txt') labels.add('dependencies');
               if (name.startsWith('tests/')) labels.add('tests');
-              if (name.endsWith('.md') || name.startsWith('.github/')) labels.add('documentation');
+              if (name.endsWith('.md') || isGithubDocs) labels.add('documentation');
             }
 
             if (labels.size > 0) {
