@@ -39,7 +39,7 @@ agents/
 - `model/` for mock, OpenAI, and Anthropic adapters plus provider selection
 - `orchestration/` for workflow coordination
 - `runtime/` for `AgentRuntime` and `ConversationalAgent`
-- `tools/` for filesystem, terminal, web fetch/search, communication, and sequential thinking tools
+- `tools/` for filesystem, terminal, `web_fetch`/`web_search` (plus `browser` alias), and sequential thinking (`think`) tools; `communication` is implemented but is not registered by `builders/build_agent.py` by default.
 - `validation/` for schema and manifest validation
 
 `AgentRuntime.start()` publishes:
