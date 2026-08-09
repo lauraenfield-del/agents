@@ -7,6 +7,7 @@ on:
       - edited
       - reopened
   pull_request_target:
+    # Uses the base-repository token to apply labels; this workflow must not check out or execute PR code.
     types:
       - opened
       - synchronize
@@ -122,11 +123,6 @@ jobs:
             );
 
             const labels = new Set();
-            const onlyDocs = files.length > 0 && files.every((file) =>
-              file.filename.endsWith('.md') ||
-              file.filename.startsWith('.github/')
-            );
-
             for (const file of files) {
               const name = file.filename;
               if (name.startsWith('core/')) labels.add('core');
@@ -138,10 +134,6 @@ jobs:
               if (name === 'requirements.txt') labels.add('dependencies');
               if (name.startsWith('tests/')) labels.add('tests');
               if (name.endsWith('.md') || name.startsWith('.github/')) labels.add('documentation');
-            }
-
-            if (onlyDocs) {
-              labels.add('documentation');
             }
 
             if (labels.size > 0) {
