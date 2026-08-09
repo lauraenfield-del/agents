@@ -47,17 +47,17 @@ jobs:
               { name: 'registry', color: 'F9D0C4', description: 'Registry metadata changes' },
             ];
 
-            const existingLabels = new Set(
-              await github.paginate(
-                github.rest.issues.listLabelsForRepo,
-                { owner, repo, per_page: 100 },
-                (response) => response.data.map((label) => label.name)
-              )
-            );
-
             for (const label of standardLabels) {
-              if (!existingLabels.has(label.name)) {
+              try {
                 await github.rest.issues.createLabel({ owner, repo, ...label });
+              } catch (error) {
+                const alreadyExists =
+                  error.status === 422 &&
+                  Array.isArray(error.response?.data?.errors) &&
+                  error.response.data.errors.some((entry) => entry.code === 'already_exists');
+                if (!alreadyExists) {
+                  throw error;
+                }
               }
             }
 
