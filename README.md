@@ -197,6 +197,17 @@ Current verified baseline:
 - 62 passing tests
 - `python3 -m pytest -q`
 
+## Contributing and project governance
+
+Contributor-facing guidance is available in:
+
+- `CONTRIBUTING.md`
+- `CODE_OF_CONDUCT.md`
+- `SECURITY.md`
+- `.github/pull_request_template.md`
+- `.github/ISSUE_TEMPLATE/`
+- `.github/CODEOWNERS`
+
 ## Notes on `skills/`
 
 The `skills/` tree is currently versioned in this repository, but it is separate from the Python runtime described above:
