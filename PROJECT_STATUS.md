@@ -1,62 +1,65 @@
 # Project Status
 
-## Overview
+This file is a current snapshot of what is actually present in the repository.
 
-This document tracks the status of the agent framework project.
+## Implemented runtime
 
-## Checklist
+- Core event bus, runtime, orchestration, validation, logging, memory, and tool infrastructure are present under `core/`
+- `ConversationalAgent` is implemented under `core/runtime/conversational.py`
+- Live provider adapters exist for OpenAI and Anthropic under `core/model/`
+- `build_agent()` validates a manifest, registers known tools, creates memory, and selects a model
 
-- [x] Initial directory structure created
-- [x] Core interfaces implementation
-- [x] Event system implementation
-- [x] Logging system implementation
-- [x] Core runtime implementation
-- [x] Tool management system implementation
-- [x] Memory management system implementation
-- [x] Real model adapters (OpenAI, Anthropic) + model factory
-- [x] Conversational agent with Input→Plan→Act→Review loop
-- [x] Core tools: filesystem, terminal, web_fetch, web_search, think
-- [x] Agent package implementation (all 6 packages)
-- [x] Manifest validation and generation
-- [x] Registry integration (all 6 packages registered)
-- [x] Manifest-driven runtime construction (build_agent)
-- [x] Interactive chat REPL via run_agent.py
+## Implemented tools
 
-## Status Indicators
+The runtime currently includes implementations for:
 
-- **Core Runtime:** Complete
-- **Model Layer:** Complete – OpenAI and Anthropic adapters with auto-selecting factory
-- **Tools:** Complete – filesystem, terminal, web_fetch, web_search, think
-- **Conversational Agents:** Complete – Input→Plan→Act→Review loop
-- **Agent Packages:** Complete (6 packages: autonomous, coding, customer_support, marketing, research, social_media)
-- **Registry:** Complete – all 6 packages indexed in registry/package_index.json and registry/agents.json
+- filesystem
+- terminal
+- web fetch
+- web search
+- communication
+- sequential thinking / think
 
-## Configuration
+## Registered packages
 
-Set one of the following environment variables to enable real LLM inference:
+The repository currently includes six registered packages:
 
-| Variable | Provider | Default model |
-|---|---|---|
-| `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` (override: `OPENAI_MODEL`) |
-| `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` (override: `ANTHROPIC_MODEL`) |
+- autonomous
+- coding
+- customer_support
+- marketing
+- research
+- social_media
 
-Without a key, `build_agent` falls back to `MockModel` and emits a `RuntimeWarning`.
+## CLI and demo entry points
 
-## Test Evidence
+- `run_agent.py` launches a package by name
+- passing a message runs one turn and exits
+- omitting the message starts an interactive REPL
+- `demo.py` demonstrates runtime event subscriptions with a simple demo agent
 
-- **test_interfaces.py:** 4 passed
-- **test_events.py:** 4 passed
-- **test_logging.py:** 2 passed
-- **test_runtime.py:** 3 passed
-- **test_tools.py:** 7 passed
-- **test_memory.py:** 6 passed
-- **test_builders.py:** 6 passed
-- **test_validation.py:** 3 passed
-- **test_orchestration.py:** passed
+## Model configuration
 
-## Changelog
+To use a live model:
 
-- **2026-08-04:** Initial project setup. Created directory structure and placeholder files.
-- **2026-08-04:** Implemented core interfaces, event system, logging, runtime, tool management, memory.
-- **2026-08-05:** Fixed demo/runtime wiring; manifest validation; package registration; build helpers.
-- **2026-08-08:** Added real model adapters (OpenAI, Anthropic) and model factory. Added tools: web_fetch, web_search, think, terminal. Added ConversationalAgent with Input→Plan→Act→Review loop. Updated all 6 package manifests to use implemented tools. Populated registry. Fixed run_agent.py undefined-variable bug. Added interactive REPL to run_agent.py.
+- install `openai` and set `OPENAI_API_KEY`, optionally `OPENAI_MODEL`
+- or install `anthropic` and set `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_MODEL`
+
+If neither key is configured, the runtime falls back to `MockModel` with a warning.
+
+## Test verification
+
+Verified on 2026-08-09 with:
+
+```bash
+python3 -m pytest -q
+```
+
+Result:
+
+- 62 passed
+- 1 expected warning about falling back to `MockModel` when no API key is configured
+
+## Repository note
+
+The repository also contains a versioned `skills/` directory. That content is currently separate from the Python runtime and is not loaded by `build_agent()` or `run_agent.py`.
