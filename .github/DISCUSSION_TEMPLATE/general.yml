@@ -1,0 +1,39 @@
+title: "[Discussion]: "
+labels:
+  - discussion
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for starting a discussion. Please share enough context for maintainers and contributors to respond clearly.
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic area
+      description: Which area best fits this discussion?
+      options:
+        - General project question
+        - Idea or proposal
+        - Architecture or design
+        - Contributor process
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What would you like to discuss?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Share any relevant background, links, or prior exploration.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What answer, decision, or next step would be most helpful?
