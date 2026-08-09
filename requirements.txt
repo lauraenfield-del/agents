@@ -1,2 +1,11 @@
+# Core testing and validation
 pytest
 jsonschema
+PyYAML
+
+# HTTP / web tools (WebFetchTool, WebSearchTool)
+requests
+
+# LLM providers (install one or both; set corresponding API key env var)
+# openai        # pip install openai      → set OPENAI_API_KEY
+# anthropic     # pip install anthropic   → set ANTHROPIC_API_KEY

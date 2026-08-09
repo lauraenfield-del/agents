@@ -1,11 +1,13 @@
 name: Autonomous Agent
 version: 1.0.0
 inherits: core
-description: Long-running autonomous task execution agent
+description: Long-running autonomous task execution agent capable of planning, acting, and reviewing multi-step tasks.
 tools:
-  - browser
-  - terminal
   - filesystem
+  - terminal
+  - web_fetch
+  - web_search
+  - think
 workflows:
   - planning
   - execution

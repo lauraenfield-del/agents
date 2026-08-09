@@ -1,1 +1,44 @@
-{}
+{
+  "autonomous": {
+    "description": "Long-running autonomous task execution agent capable of planning, acting, and reviewing multi-step tasks.",
+    "entrypoint": "autonomous_controller",
+    "name": "Autonomous Agent",
+    "path": "packages/autonomous",
+    "version": "1.0.0"
+  },
+  "coding": {
+    "description": "Expert software developer and Python specialist with deep knowledge of Python 3.x, software engineering principles, design patterns, testing, security, and CI/CD integration.",
+    "entrypoint": "coding_controller",
+    "name": "Coding Agent",
+    "path": "packages/coding",
+    "version": "1.0.0"
+  },
+  "customer_support": {
+    "description": "Agent for handling customer support inquiries, resolving issues, and providing helpful responses.",
+    "entrypoint": "customer_support_controller",
+    "name": "Customer Support Agent",
+    "path": "packages/customer_support",
+    "version": "1.0.0"
+  },
+  "marketing": {
+    "description": "Agent for marketing campaign planning, lead generation, and performance analysis.",
+    "entrypoint": "marketing_controller",
+    "name": "Marketing Agent",
+    "path": "packages/marketing",
+    "version": "1.0.0"
+  },
+  "research": {
+    "description": "Research-focused agent for information gathering, web research, and in-depth analysis.",
+    "entrypoint": "research_controller",
+    "name": "Research Agent",
+    "path": "packages/research",
+    "version": "1.0.0"
+  },
+  "social_media": {
+    "description": "Agent for managing social media strategy, content creation, scheduling, and engagement.",
+    "entrypoint": "social_media_controller",
+    "name": "Social Media Agent",
+    "path": "packages/social_media",
+    "version": "1.0.0"
+  }
+}

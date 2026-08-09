@@ -48,6 +48,7 @@ def test_runtime_initialization(mock_agent, mock_event_bus, mock_tool_manager, m
     assert mock_agent.model is mock_model
 
 def test_runtime_start_lifecycle(mock_agent, mock_event_bus, mock_tool_manager, mock_memory, mock_model):
+    mock_agent.run.return_value = "done"
     runtime = AgentRuntime(
         agent=mock_agent, 
         event_bus=mock_event_bus, 
@@ -55,7 +56,8 @@ def test_runtime_start_lifecycle(mock_agent, mock_event_bus, mock_tool_manager, 
         memory=mock_memory,
         model=mock_model
     )
-    runtime.start()
+    result = runtime.start()
+    assert result is True
 
     mock_agent.run.assert_called_once()
 
@@ -89,3 +91,32 @@ def test_runtime_handles_agent_exception(mock_agent, mock_event_bus, mock_tool_m
         call("runtime.stop"),
     ]
     mock_event_bus.publish.assert_has_calls(expected_calls)
+
+
+def test_runtime_start_returns_false_on_exception(mock_agent, mock_event_bus, mock_tool_manager, mock_memory, mock_model):
+    mock_agent.run.side_effect = Exception("failure")
+    runtime = AgentRuntime(
+        agent=mock_agent,
+        event_bus=mock_event_bus,
+        tool_manager=mock_tool_manager,
+        memory=mock_memory,
+        model=mock_model,
+    )
+    result = runtime.start()
+    assert result is False
+
+
+def test_runtime_can_reraise_agent_exception(mock_agent, mock_event_bus, mock_tool_manager, mock_memory, mock_model):
+    error = Exception("Something went wrong")
+    mock_agent.run.side_effect = error
+
+    runtime = AgentRuntime(
+        agent=mock_agent,
+        event_bus=mock_event_bus,
+        tool_manager=mock_tool_manager,
+        memory=mock_memory,
+        model=mock_model,
+    )
+
+    with pytest.raises(Exception, match="Something went wrong"):
+        runtime.start(raise_exceptions=True)

@@ -63,10 +63,10 @@ core/
 ├── interfaces/    Abstract base classes (Agent, Tool, Memory, Model)
 ├── logging/       Structured logger factory
 ├── memory/        In-process memory store (SimpleMemory)
-├── model/         Model abstraction + MockModel for local testing
+├── model/         Model abstraction + OpenAI-compatible live model client
 ├── orchestration/ Workflow coordination
 ├── runtime/       AgentRuntime — the main execution engine
-├── tools/         Built-in tools (FileSystemTool) + ToolManager
+├── tools/         Built-in tools (filesystem, terminal, web, communication, sequential thinking)
 └── validation/    Schema and manifest validation helpers
 ```
 
@@ -241,7 +241,51 @@ This installs:
 | `jsonschema` | JSON schema validation |
 | `PyYAML` | YAML manifest parsing |
 
-### 5. Verify the installation
+### 5. Configure LLM credentials
+
+The framework auto-selects a real LLM provider based on which API key is set.
+Set **one** of the following environment variables before running any agent:
+
+| Variable | Provider | Default model | Model override |
+|---|---|---|---|
+| `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` | `OPENAI_MODEL` |
+| `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` | `ANTHROPIC_MODEL` |
+
+**macOS / Linux:**
+
+```bash
+export OPENAI_API_KEY=sk-...          # use your real key
+# or
+export ANTHROPIC_API_KEY=sk-ant-...   # use your real key
+```
+
+**Windows (PowerShell):**
+
+```powershell
+$env:OPENAI_API_KEY = "sk-..."          # use your real key
+# or
+$env:ANTHROPIC_API_KEY = "sk-ant-..."   # use your real key
+```
+
+**Optional — override the default model (macOS / Linux):**
+
+```bash
+export OPENAI_MODEL=gpt-4o            # any OpenAI model name
+export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+```
+
+**Optional — override the default model (Windows PowerShell):**
+
+```powershell
+$env:OPENAI_MODEL = "gpt-4o"
+$env:ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+```
+
+If neither key is set, `build_agent` falls back to `MockModel` and emits a
+`RuntimeWarning`. This is intentional so that tests and local exploration work
+without credentials.
+
+### 6. Verify the installation
 
 ```bash
 python -c "from builders.build_agent import build_agent; print('Setup OK')"
@@ -261,27 +305,27 @@ All commands must be run from the **root of the repository** with the virtual en
 
 ### Option A — run\_agent.py (recommended)
 
-`run_agent.py` is the standard CLI entry point. Pass it the name of any package in the `packages/` directory.
+`run_agent.py` is the standard CLI entry point. Pass a package name and a user request.
 
 **Run the autonomous agent:**
 
 ```bash
-python run_agent.py autonomous
+python run_agent.py autonomous "Find the latest notes from example.com and summarize them."
 ```
 
 **Run the research agent:**
 
 ```bash
-python run_agent.py research
+python run_agent.py research "Gather key points about zero-trust architecture."
 ```
 
 **Run any other package** by substituting its directory name:
 
 ```bash
-python run_agent.py coding
-python run_agent.py marketing
-python run_agent.py social_media
-python run_agent.py customer_support
+python run_agent.py coding "Refactor this function for readability."
+python run_agent.py marketing "Draft a launch announcement."
+python run_agent.py social_media "Write a short post for product update."
+python run_agent.py customer_support "Respond to a customer asking about billing."
 ```
 
 **Expected output (autonomous example):**
@@ -291,8 +335,16 @@ Building agent from package: autonomous
 Starting agent: Autonomous Agent
 {"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
 {"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
-Agent finished successfully.
+Agent finished.
 ```
+
+The default model client is OpenAI-compatible and reads:
+
+- `OPENAI_API_KEY` or `AGENTS_MODEL_API_KEY`
+- Optional `AGENTS_MODEL_NAME` (default: `gpt-4.1-mini`)
+- Optional `AGENTS_MODEL_API_BASE` (default: `https://api.openai.com/v1`)
+
+For local tests and demo usage only, set `AGENTS_USE_MOCK_MODEL=true` to force `MockModel`.
 
 The runtime:
 
@@ -404,7 +456,7 @@ python run_agent.py my_agent
 ```
 Building agent from package: my_agent
 Starting agent: My Agent
-Agent finished successfully.
+Agent finished.
 ```
 
 ---
