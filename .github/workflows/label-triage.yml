@@ -1,0 +1,154 @@
+name: Label triage
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-issue:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure standard labels and label issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue = context.payload.issue;
+
+            const standardLabels = [
+              { name: 'needs-triage', color: 'D4C5F9', description: 'Awaiting maintainer triage' },
+              { name: 'bug', color: 'D73A4A', description: 'Something is not working' },
+              { name: 'enhancement', color: 'A2EEEF', description: 'New feature or request' },
+              { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
+              { name: 'question', color: '7057FF', description: 'Further information is requested' },
+              { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
+              { name: 'dependencies', color: '0366D6', description: 'Dependency updates or maintenance' },
+              { name: 'github-actions', color: '5319E7', description: 'GitHub Actions or workflow changes' },
+            ];
+
+            for (const label of standardLabels) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: label.name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, ...label });
+              }
+            }
+
+            const text = `${issue.title}\n${issue.body || ''}`.toLowerCase();
+            const labels = new Set(['needs-triage']);
+
+            if (text.includes('[bug]') || text.includes('bug') || text.includes('error') || text.includes('traceback') || text.includes('failure')) {
+              labels.add('bug');
+            }
+            if (text.includes('[feature]') || text.includes('feature') || text.includes('enhancement') || text.includes('proposal')) {
+              labels.add('enhancement');
+            }
+            if (text.includes('docs') || text.includes('documentation') || text.includes('readme')) {
+              labels.add('documentation');
+            }
+            if (text.includes('question') || text.includes('how do i') || text.includes('how to')) {
+              labels.add('question');
+            }
+            if (text.includes('test') || text.includes('pytest')) {
+              labels.add('tests');
+            }
+            if (text.includes('dependency') || text.includes('requirements.txt') || text.includes('package version')) {
+              labels.add('dependencies');
+            }
+            if (text.includes('workflow') || text.includes('github actions') || text.includes('ci')) {
+              labels.add('github-actions');
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: Array.from(labels),
+            });
+
+  label-pr:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure standard labels and label pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull = context.payload.pull_request;
+
+            const standardLabels = [
+              { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
+              { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
+              { name: 'dependencies', color: '0366D6', description: 'Dependency updates or maintenance' },
+              { name: 'github-actions', color: '5319E7', description: 'GitHub Actions or workflow changes' },
+              { name: 'core', color: 'FBCA04', description: 'Core runtime changes' },
+              { name: 'builders', color: 'C2E0C6', description: 'Builder and package assembly changes' },
+              { name: 'packages', color: '0E8A16', description: 'Agent package manifest changes' },
+              { name: 'skills', color: '1D76DB', description: 'Skill content changes' },
+              { name: 'registry', color: 'F9D0C4', description: 'Registry metadata changes' },
+            ];
+
+            for (const label of standardLabels) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: label.name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, ...label });
+              }
+            }
+
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner, repo, pull_number: pull.number, per_page: 100 }
+            );
+
+            const labels = new Set();
+            const onlyDocs = files.length > 0 && files.every((file) =>
+              file.filename.endsWith('.md') ||
+              file.filename.startsWith('.github/')
+            );
+
+            for (const file of files) {
+              const name = file.filename;
+              if (name.startsWith('core/')) labels.add('core');
+              if (name.startsWith('builders/')) labels.add('builders');
+              if (name.startsWith('packages/')) labels.add('packages');
+              if (name.startsWith('skills/')) labels.add('skills');
+              if (name.startsWith('registry/')) labels.add('registry');
+              if (name.startsWith('.github/workflows/')) labels.add('github-actions');
+              if (name === 'requirements.txt') labels.add('dependencies');
+              if (name.startsWith('tests/')) labels.add('tests');
+              if (name.endsWith('.md') || name.startsWith('.github/')) labels.add('documentation');
+            }
+
+            if (onlyDocs) {
+              labels.add('documentation');
+            }
+
+            if (labels.size > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: pull.number,
+                labels: Array.from(labels),
+              });
+            }

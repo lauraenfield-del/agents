@@ -204,9 +204,13 @@ Contributor-facing guidance is available in:
 - `CONTRIBUTING.md`
 - `CODE_OF_CONDUCT.md`
 - `SECURITY.md`
+- `SUPPORT.md`
 - `.github/pull_request_template.md`
 - `.github/ISSUE_TEMPLATE/`
+- `.github/DISCUSSION_TEMPLATE/`
 - `.github/CODEOWNERS`
+- `.github/FUNDING.yml`
+- `.github/workflows/label-triage.yml`
 
 ## Notes on `skills/`
 
