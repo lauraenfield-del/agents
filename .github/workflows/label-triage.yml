@@ -96,7 +96,7 @@ jobs:
             if (hasWord(/\bdependency\b|\brequirements\.txt\b|\bpackage version\b/)) {
               labels.add('dependencies');
             }
-            if (hasWord(/\bworkflow\b|\bgithub actions\b|\bci\b/)) {
+            if (hasWord(/\bworkflow\b|\bgithub actions\b|\.github\/workflows\//)) {
               labels.add('github-actions');
             }
 
