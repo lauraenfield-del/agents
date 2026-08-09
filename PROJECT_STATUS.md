@@ -15,10 +15,10 @@ The runtime currently includes implementations for:
 
 - filesystem
 - terminal
-- web fetch
-- web search
-- communication
-- sequential thinking / think
+- `web_fetch` (also available as `browser`)
+- `web_search`
+- `communication` (implemented, but not registered by `build_agent()` by default)
+- `think` (sequential thinking)
 
 ## Registered packages
 
