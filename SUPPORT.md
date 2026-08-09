@@ -9,13 +9,13 @@ For usage questions, contributor process questions, or design discussion:
 
 Please use:
 
-- `/home/runner/work/agents/agents/.github/ISSUE_TEMPLATE/bug_report.yml` for reproducible defects
-- `/home/runner/work/agents/agents/.github/ISSUE_TEMPLATE/feature_request.yml` for proposed improvements
-- `/home/runner/work/agents/agents/.github/DISCUSSION_TEMPLATE/general.yml` for broader questions or design discussion
+- `.github/ISSUE_TEMPLATE/bug_report.yml` for reproducible defects
+- `.github/ISSUE_TEMPLATE/feature_request.yml` for proposed improvements
+- `.github/DISCUSSION_TEMPLATE/general.yml` for broader questions or design discussion
 
 ## Security support
 
-Do not request help for vulnerabilities in public issues or discussions. Follow `/home/runner/work/agents/agents/SECURITY.md`.
+Do not request help for vulnerabilities in public issues or discussions. Follow `SECURITY.md`.
 
 ## Maintainer response expectations
 
