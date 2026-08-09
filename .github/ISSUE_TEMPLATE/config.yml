@@ -1,5 +1,6 @@
 blank_issues_enabled: false
 contact_links:
+  # Update this URL if the repository is renamed or transferred.
   - name: Security issue reporting
     about: Do not file vulnerabilities publicly. Follow the repository security policy instead.
     url: https://github.com/lauraenfield-del/agents/security/policy
