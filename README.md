@@ -1,496 +1,208 @@
 # Agents
 
-A modular, plug-and-play agent framework built around a single **Core Runtime** and a collection of **specialized Agent Packages**.
+This repository currently contains two things:
 
----
+1. a small Python agent framework built around a shared runtime and manifest-driven packages
+2. a `skills/` directory of prompt/content assets that is stored in the repo but is not imported by the Python runtime
 
-## Table of Contents
+The executable framework lives in `core/`, `builders/`, `packages/`, `registry/`, `tests/`, `run_agent.py`, and `demo.py`.
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-  - [Core Runtime](#core-runtime)
-  - [Agent Packages](#agent-packages)
-  - [Builders](#builders)
-  - [Registry](#registry)
-- [Directory Structure](#directory-structure)
-- [Available Packages](#available-packages)
-- [Installation and Setup](#installation-and-setup)
-- [Running an Agent](#running-an-agent)
-  - [Option A — run\_agent.py (recommended)](#option-a--run_agentpy-recommended)
-  - [Option B — demo.py (event-driven demo)](#option-b--demopy-event-driven-demo)
-  - [Option C — Python API](#option-c--python-api)
-- [Creating a New Package](#creating-a-new-package)
-  - [1. Generate the package scaffold](#1-generate-the-package-scaffold)
-  - [2. Register the package](#2-register-the-package)
-  - [3. Run the new agent](#3-run-the-new-agent)
-- [Running Tests](#running-tests)
+## Repository layout
 
----
-
-## Overview
-
-This repository is a **central hub for AI agents**.
-
-At its heart is a single, domain-agnostic **Core Runtime** that handles every cross-cutting concern shared by all agents: execution lifecycle, memory, tools, events, logging, safety, and validation.
-
-Surrounding the core are **specialized Agent Packages** — self-contained directories that plug into the Core Runtime and give an agent its personality, workflows, tools, and domain knowledge.
-
-```
-Core Runtime  ←  the foundation every agent shares
-     │
-     ├── autonomous/   Long-running task execution agent
-     ├── coding/       Software engineering agent
-     ├── research/     Information gathering & analysis agent
-     ├── marketing/    Marketing automation agent
-     ├── social_media/ Social media management agent
-     └── customer_support/  Customer support agent
-```
-
-No package ever modifies the Core Runtime.  
-All specialization is achieved through **composition**: pick a package, load it into the runtime, run.
-
----
-
-## Architecture
-
-### Core Runtime
-
-Located in `core/`, the runtime is the authoritative foundation for every agent.
-
-```
-core/
-├── events/        Event bus — publish/subscribe between runtime components
-├── interfaces/    Abstract base classes (Agent, Tool, Memory, Model)
-├── logging/       Structured logger factory
-├── memory/        In-process memory store (SimpleMemory)
-├── model/         Model abstraction + OpenAI-compatible live model client
-├── orchestration/ Workflow coordination
-├── runtime/       AgentRuntime — the main execution engine
-├── tools/         Built-in tools (filesystem, terminal, web, communication, sequential thinking)
-└── validation/    Schema and manifest validation helpers
-```
-
-`AgentRuntime` wires everything together:
-
-```
-AgentRuntime(agent, event_bus, tool_manager, memory, model)
-      │
-      └── runtime.start()
-              │
-              ├── event_bus.publish("runtime.start")
-              ├── event_bus.publish("agent.run.before")
-              ├── agent.run()                    ← the package's entrypoint
-              ├── event_bus.publish("agent.run.after")   (only if agent.run succeeds)
-              ├── event_bus.publish("agent.error", e)    (if agent.run raises)
-              └── event_bus.publish("runtime.stop")
-```
-
-### Agent Packages
-
-Located in `packages/`, each package is a directory that must contain exactly one `agent.yaml` manifest:
-
-```yaml
-name: Autonomous Agent
-version: 1.0.0
-inherits: core
-description: Long-running autonomous task execution agent
-tools:
-  - browser
-  - terminal
-  - filesystem
-workflows:
-  - planning
-  - execution
-  - evaluation
-knowledge:
-  - autonomy
-entrypoint:
-  workflow: autonomous_controller
-```
-
-The manifest is the complete contract between a package and the runtime.
-
-### Builders
-
-Located in `builders/`, these utilities automate the full package lifecycle:
-
-| Script | Purpose |
-|---|---|
-| `validate_package.py` | Loads and validates an `agent.yaml` manifest |
-| `generate_package.py` | Writes a new `agent.yaml` from a Python dict |
-| `register_package.py` | Validates a package and adds it to `registry/package_index.json` |
-| `build_agent.py` | Validates, wires tools + memory + model, returns a ready `AgentRuntime` |
-
-### Registry
-
-Located in `registry/`, two JSON files track the installed package universe:
-
-| File | Contents |
-|---|---|
-| `package_index.json` | Name, version, description, path, and entrypoint for every registered package |
-| `agents.json` | Reserved for additional agent metadata |
-
----
-
-## Directory Structure
-
-```
+```text
 agents/
-│
-├── core/                  Core Runtime (shared by every agent)
-│   ├── events/
-│   ├── interfaces/
-│   ├── logging/
-│   ├── memory/
-│   ├── model/
-│   ├── orchestration/
-│   ├── runtime/
-│   ├── tools/
-│   └── validation/
-│
-├── packages/              Specialized Agent Packages
-│   ├── autonomous/
-│   ├── coding/
-│   ├── customer_support/
-│   ├── marketing/
-│   ├── research/
-│   └── social_media/
-│
-├── registry/              Package discovery index
-│   ├── agents.json
-│   └── package_index.json
-│
-├── builders/              Package lifecycle utilities
-│   ├── build_agent.py
-│   ├── generate_package.py
-│   ├── register_package.py
-│   └── validate_package.py
-│
-├── tests/                 Test suite
-├── demo.py                Event-driven demo
-├── run_agent.py           CLI entry point
-├── requirements.txt       Python dependencies
-└── pytest.ini             Test configuration
+├── builders/      Package validation, generation, registration, and runtime assembly
+├── core/          Runtime, tools, models, memory, orchestration, and validation code
+├── packages/      Six manifest-only agent packages
+├── registry/      JSON package indexes
+├── skills/        Standalone skill/reference content; not loaded by build_agent()
+├── tests/         Pytest suite
+├── demo.py        Event bus demonstration
+├── run_agent.py   CLI entry point
+├── README.md
+├── PROJECT_STATUS.md
+├── objective.md
+├── requirements.txt
+└── pytest.ini
 ```
 
----
+## What is implemented
 
-## Available Packages
+### Core runtime
+
+`core/` currently includes:
+
+- `events/` for pub/sub lifecycle events
+- `interfaces/` for abstract agent, tool, memory, model, and workflow contracts
+- `logging/` for structured logging helpers
+- `memory/` for in-memory and file-backed storage
+- `model/` for mock, OpenAI, and Anthropic adapters plus provider selection
+- `orchestration/` for workflow coordination
+- `runtime/` for `AgentRuntime` and `ConversationalAgent`
+- `tools/` for filesystem, terminal, `web_fetch`/`web_search` (plus `browser` alias), and sequential thinking (`think`) tools; `communication` is implemented but is not registered by `builders/build_agent.py` by default.
+- `validation/` for schema and manifest validation
+
+`AgentRuntime.start()` publishes:
+
+1. `runtime.start`
+2. `agent.run.before`
+3. `agent.run.after` on success, or `agent.error` on failure
+4. `runtime.stop`
+
+### Packaged agents
+
+The repo currently ships these six packages:
 
 | Package | Description |
 |---|---|
-| `autonomous` | Long-running autonomous task execution agent |
+| `autonomous` | Long-running task execution agent |
 | `coding` | Software engineering agent |
-| `research` | Information gathering and analysis agent |
-| `marketing` | Marketing automation agent |
-| `social_media` | Social media management agent |
+| `research` | Research and analysis agent |
+| `marketing` | Marketing workflow agent |
+| `social_media` | Social media workflow agent |
 | `customer_support` | Customer support agent |
 
----
+Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 
-## Installation and Setup
+### Builders and registry
 
-These instructions assume **Python 3.12** or later. Every command must be run from the **root of this repository**.
+| Path | Purpose |
+|---|---|
+| `builders/validate_package.py` | Load and validate an `agent.yaml` manifest |
+| `builders/generate_package.py` | Write a new manifest from a Python dictionary |
+| `builders/register_package.py` | Validate a package and add it to `registry/package_index.json` |
+| `builders/build_agent.py` | Build an `AgentRuntime` from a package directory |
+| `registry/package_index.json` | Registered package metadata |
+| `registry/agents.json` | Reserved metadata file; currently present but not actively used by the runtime |
 
-### 1. Clone the repository
+## Setup
 
-```bash
-git clone https://github.com/lauraenfield-del/agents.git
-cd agents
-```
-
-### 2. Create a virtual environment
+These instructions were verified with Python 3.12.
 
 ```bash
 python3 -m venv .venv
-```
-
-### 3. Activate the virtual environment
-
-**macOS / Linux:**
-
-```bash
 source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 ```
 
-**Windows (PowerShell):**
+`requirements.txt` installs the base development dependencies used by the repository, including `pytest`, `jsonschema`, `PyYAML`, and `requests`.
 
-```powershell
-.venv\Scripts\Activate.ps1
-```
+### Optional live-model dependencies
 
-**Windows (Command Prompt):**
-
-```cmd
-.venv\Scripts\activate.bat
-```
-
-Your shell prompt will change to show `(.venv)` when the environment is active.
-
-### 4. Install dependencies
+The base install does **not** install provider SDKs. To use a live hosted model instead of the mock fallback, install one of:
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install openai
+# or
+python3 -m pip install anthropic
 ```
 
-This installs:
+Then configure one of these environment variables:
 
-| Package | Purpose |
-|---|---|
-| `pytest` | Test runner |
-| `jsonschema` | JSON schema validation |
-| `PyYAML` | YAML manifest parsing |
-
-### 5. Configure LLM credentials
-
-The framework auto-selects a real LLM provider based on which API key is set.
-Set **one** of the following environment variables before running any agent:
-
-| Variable | Provider | Default model | Model override |
+| Variable | Provider | Default model | Optional override |
 |---|---|---|---|
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o-mini` | `OPENAI_MODEL` |
 | `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` | `ANTHROPIC_MODEL` |
 
-**macOS / Linux:**
+`builders.build_agent.build_agent()` uses `core.model.factory.create_model()`, which checks `OPENAI_API_KEY` first, then `ANTHROPIC_API_KEY`. If neither key is set, it warns and falls back to `MockModel`.
+
+## Running agents
+
+Run commands from the repository root.
+
+### CLI
+
+`run_agent.py` supports both one-shot and interactive use:
 
 ```bash
-export OPENAI_API_KEY=sk-...          # use your real key
-# or
-export ANTHROPIC_API_KEY=sk-ant-...   # use your real key
+python3 run_agent.py research "Summarize zero-trust architecture."
+python3 run_agent.py coding
 ```
 
-**Windows (PowerShell):**
+- with a message: the agent handles one request and exits
+- without a message: an interactive REPL starts
 
-```powershell
-$env:OPENAI_API_KEY = "sk-..."          # use your real key
-# or
-$env:ANTHROPIC_API_KEY = "sk-ant-..."   # use your real key
+Typical startup output begins with:
+
+```text
+Building agent from package: research
+Agent ready: Research Agent
 ```
 
-**Optional — override the default model (macOS / Linux):**
+### Demo
+
+`demo.py` is an event-lifecycle demo. It builds the `autonomous` package runtime, swaps in a simple `DemoAgent`, subscribes to runtime events, and then starts the runtime:
 
 ```bash
-export OPENAI_MODEL=gpt-4o            # any OpenAI model name
-export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+python3 demo.py
 ```
 
-**Optional — override the default model (Windows PowerShell):**
-
-```powershell
-$env:OPENAI_MODEL = "gpt-4o"
-$env:ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
-```
-
-If neither key is set, `build_agent` falls back to `MockModel` and emits a
-`RuntimeWarning`. This is intentional so that tests and local exploration work
-without credentials.
-
-### 6. Verify the installation
-
-```bash
-python -c "from builders.build_agent import build_agent; print('Setup OK')"
-```
-
-Expected output:
-
-```
-Setup OK
-```
-
----
-
-## Running an Agent
-
-All commands must be run from the **root of the repository** with the virtual environment **active**.
-
-### Option A — run\_agent.py (recommended)
-
-`run_agent.py` is the standard CLI entry point. Pass a package name and a user request.
-
-**Run the autonomous agent:**
-
-```bash
-python run_agent.py autonomous "Find the latest notes from example.com and summarize them."
-```
-
-**Run the research agent:**
-
-```bash
-python run_agent.py research "Gather key points about zero-trust architecture."
-```
-
-**Run any other package** by substituting its directory name:
-
-```bash
-python run_agent.py coding "Refactor this function for readability."
-python run_agent.py marketing "Draft a launch announcement."
-python run_agent.py social_media "Write a short post for product update."
-python run_agent.py customer_support "Respond to a customer asking about billing."
-```
-
-**Expected output (autonomous example):**
-
-```
-Building agent from package: autonomous
-Starting agent: Autonomous Agent
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
-Agent finished.
-```
-
-The default model client is OpenAI-compatible and reads:
-
-- `OPENAI_API_KEY` or `AGENTS_MODEL_API_KEY`
-- Optional `AGENTS_MODEL_NAME` (default: `gpt-4.1-mini`)
-- Optional `AGENTS_MODEL_API_BASE` (default: `https://api.openai.com/v1`)
-
-For local tests and demo usage only, set `AGENTS_USE_MOCK_MODEL=true` to force `MockModel`.
-
-The runtime:
-
-1. Loads and validates the package's `agent.yaml`
-2. Registers the tools declared in the manifest
-3. Wires up memory and a model
-4. Calls `runtime.start()`, which fires the full agent lifecycle and logs progress
-
-### Option B — demo.py (event-driven demo)
-
-`demo.py` demonstrates the full event lifecycle: how to subscribe to runtime events and integrate custom logic at each lifecycle stage.
-
-```bash
-python demo.py
-```
-
-**Expected output:**
-
-```
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime starting."}
-{"timestamp": "...", "level": "INFO", "name": "demo", "message": "Event listener: Runtime has started."}
-{"timestamp": "...", "level": "INFO", "name": "demo", "message": "Event listener: Agent is about to run."}
-
---- Agent at work... ---
---- ...agent work complete. ---
-
-{"timestamp": "...", "level": "INFO", "name": "demo", "message": "Event listener: Agent has finished running."}
-{"timestamp": "...", "level": "INFO", "name": "AgentRuntime", "message": "Agent runtime stopped."}
-{"timestamp": "...", "level": "INFO", "name": "demo", "message": "Event listener: Runtime has stopped."}
-```
-
-### Option C — Python API
-
-Use the `build_agent` function directly in your own scripts.
+### Python API
 
 ```python
 from pathlib import Path
 from builders.build_agent import build_agent
 
-# Build a runtime from any package directory
 runtime = build_agent(Path("packages") / "research")
-
-# Start the agent (fires the full event lifecycle)
-runtime.start()
+reply = runtime.start(user_input="Summarize zero-trust architecture.")
+print(reply)
 ```
 
-To run from a directory other than the repo root, adjust the path accordingly:
-
-```python
-from pathlib import Path
-from builders.build_agent import build_agent
-
-repo_root = Path("/absolute/path/to/agents")
-runtime = build_agent(repo_root / "packages" / "research")
-runtime.start()
-```
-
----
-
-## Creating a New Package
-
-### 1. Generate the package scaffold
-
-Run this Python snippet from the **root of the repository**. Replace `my_agent` and the field values with your own:
+## Creating and registering a package
 
 ```python
 from pathlib import Path
 from builders.generate_package import generate_package
+from builders.register_package import register_package
 
+package_dir = Path("packages") / "my_agent"
 manifest = {
     "name": "My Agent",
     "version": "1.0.0",
     "inherits": "core",
-    "description": "A short description of what this agent does.",
-    "tools": ["filesystem"],        # list tools the agent needs
-    "workflows": ["main_workflow"], # list workflow names
+    "description": "A short description.",
+    "tools": ["filesystem"],
+    "workflows": ["main_workflow"],
     "knowledge": ["domain_knowledge"],
-    "entrypoint": {
-        "workflow": "main_workflow" # must match an entry in the workflows list
-    }
+    "entrypoint": {"workflow": "main_workflow"},
 }
 
-generate_package(Path("packages") / "my_agent", manifest)
-print("Package created at packages/my_agent/agent.yaml")
+generate_package(package_dir, manifest)
+register_package(package_dir)
 ```
 
-This creates `packages/my_agent/agent.yaml`.
-
-### 2. Register the package
-
-```python
-from pathlib import Path
-from builders.register_package import register_package
-
-entry = register_package(Path("packages") / "my_agent")
-print(f"Registered: {entry}")
-```
-
-This validates the manifest and writes an entry to `registry/package_index.json`.
-
-### 3. Run the new agent
+You can then launch it with:
 
 ```bash
-python run_agent.py my_agent
+python3 run_agent.py my_agent
 ```
 
-**Expected output:**
+## Tests
 
-```
-Building agent from package: my_agent
-Starting agent: My Agent
-Agent finished.
-```
-
----
-
-## Running Tests
-
-The full test suite uses `pytest`.
+Run the full suite with:
 
 ```bash
-pytest
+python3 -m pytest -q
 ```
 
-To run a specific test file:
+Run a single file with:
 
 ```bash
-pytest tests/test_runtime.py
+python3 -m pytest tests/test_runtime.py -q
 ```
 
-To run all tests with verbose output:
+Current verified baseline:
 
-```bash
-pytest -v
-```
+- 10 test modules
+- 62 passing tests
+- `python3 -m pytest -q`
 
-**Current test status:**
+## Notes on `skills/`
 
-| File | Tests |
-|---|---|
-| `test_interfaces.py` | 4 passed |
-| `test_events.py` | 4 passed |
-| `test_logging.py` | 2 passed |
-| `test_runtime.py` | 3 passed |
-| `test_tools.py` | 7 passed |
-| `test_memory.py` | 6 passed |
-| `test_orchestration.py` | 4 passed |
-| `test_builders.py` | 6 passed |
-| `test_validation.py` | 4 passed |
+The `skills/` tree is currently versioned in this repository, but it is separate from the Python runtime described above:
+
+- `build_agent()` does not load from `skills/`
+- `run_agent.py` does not reference `skills/`
+- the runtime operates entirely from `core/`, `builders/`, `packages/`, and `registry/`
+
+If you are working on the Python framework, treat `skills/` as adjacent content rather than runtime code.
