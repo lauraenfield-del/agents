@@ -34,6 +34,7 @@ jobs:
               { name: 'needs-triage', color: 'D4C5F9', description: 'Awaiting maintainer triage' },
               { name: 'bug', color: 'D73A4A', description: 'Something is not working' },
               { name: 'enhancement', color: 'A2EEEF', description: 'New feature or request' },
+              { name: 'discussion', color: 'C5DEF5', description: 'General discussion and collaboration' },
               { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
               { name: 'question', color: '7057FF', description: 'Further information is requested' },
               { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
@@ -46,11 +47,16 @@ jobs:
               { name: 'registry', color: 'F9D0C4', description: 'Registry metadata changes' },
             ];
 
+            const existingLabels = new Set(
+              await github.paginate(
+                github.rest.issues.listLabelsForRepo,
+                { owner, repo, per_page: 100 },
+                (response) => response.data.map((label) => label.name)
+              )
+            );
+
             for (const label of standardLabels) {
-              try {
-                await github.rest.issues.getLabel({ owner, repo, name: label.name });
-              } catch (error) {
-                if (error.status !== 404) throw error;
+              if (!existingLabels.has(label.name)) {
                 await github.rest.issues.createLabel({ owner, repo, ...label });
               }
             }
