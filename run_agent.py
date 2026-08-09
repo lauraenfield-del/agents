@@ -25,6 +25,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     package_name = sys.argv[1]
+
     package_dir = Path("packages") / package_name
 
     if not package_dir.is_dir():
@@ -67,4 +68,3 @@ if __name__ == "__main__":
             print(f"{agent_name}: {reply}\n")
         else:
             runtime.start(user_input=user_input)
-

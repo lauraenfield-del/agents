@@ -100,4 +100,3 @@ class TerminalTool(Tool):
             return f"Command not found: {args[0]}"
         except Exception as exc:
             return f"Error running command: {exc}"
-

@@ -24,8 +24,8 @@ def _make_system_prompt(manifest: dict) -> str:
     return (
         f"You are {manifest.get('name', 'an AI agent')}. "
         f"{manifest.get('description', '')} "
-        "Answer clearly and helpfully. When you need to use a tool, "
-        "emit a line in the format: TOOL:<tool_name> ARGS:<json_args>"
+        "Answer clearly and helpfully. Follow a practical Input->Plan->Act->Review "
+        "flow and use tools when they are needed to satisfy the user request."
     )
 
 
@@ -131,7 +131,7 @@ def _build_model(manifest: dict) -> Model:
             "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real model inference. "
             "Falling back to MockModel for now.",
             RuntimeWarning,
-            stacklevel=3,
+            stacklevel=2,
         )
         from core.model.mock import MockModel
         return MockModel()
