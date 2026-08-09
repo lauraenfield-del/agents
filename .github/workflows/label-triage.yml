@@ -48,6 +48,7 @@ jobs:
             ];
 
             const existingLabels = new Set();
+            const requiredLabels = new Set(standardLabels.map((label) => label.name.toLowerCase()));
             for await (const response of github.paginate.iterator(
               github.rest.issues.listLabelsForRepo,
               { owner, repo, per_page: 100 }
@@ -55,7 +56,7 @@ jobs:
               for (const label of response.data) {
                 existingLabels.add(label.name.toLowerCase());
               }
-              if (standardLabels.every((l) => existingLabels.has(l.name.toLowerCase()))) break;
+              if ([...requiredLabels].every((label) => existingLabels.has(label))) break;
             }
 
             for (const label of standardLabels) {
