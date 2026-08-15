@@ -1,0 +1,35 @@
+name: Personal Assistant Agent
+version: 1.0.0
+inherits: core
+description: End-to-end personal operations assistant for passive-income workflows with approval-aware execution and secure credential references.
+tools:
+  - think
+  - web_fetch
+  - web_search
+  - filesystem
+  - sendblue
+  - shopify
+  - canva
+frontend:
+  connectors:
+    - type: chat_input
+      entrypoint: chat
+    - type: workspace_snapshot
+      source: assistant:workspace
+    - type: approval_queue
+      source: assistant:pending_approvals
+    - type: tool_registry
+      source: runtime.tools
+workflows:
+  - intake
+  - planning
+  - execution
+  - review
+  - confirmation
+knowledge:
+  - sendblue_operations
+  - shopify_operations
+  - canva_design_ops
+  - security_guardrails
+entrypoint:
+  workflow: personal_assistant_controller
