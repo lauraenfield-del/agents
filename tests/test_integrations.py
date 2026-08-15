@@ -85,6 +85,19 @@ def test_shopify_rejects_non_shopify_domain():
     assert ".myshopify.com" in result["details"]
 
 
+def test_shopify_rejects_lookalike_domain():
+    tool = ShopifyTool()
+    result = tool.execute(
+        action="get_orders",
+        store_domain="example.myshopify.com.evil.test",
+        secret_scope="shopify",
+        secret_name="main",
+    )
+
+    assert result["status"] == "error"
+    assert ".myshopify.com" in result["details"]
+
+
 def test_integration_redirect_handler_blocks_disallowed_host():
     handler = _AllowedHostsRedirectHandler("shopify", ("example.myshopify.com",))
     req = request.Request("https://example.myshopify.com/admin/api/2025-01/orders.json")

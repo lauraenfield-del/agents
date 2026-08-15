@@ -54,6 +54,47 @@ def test_build_personal_assistant_registers_integration_tools():
     assert runtime.agent.__class__.__name__ == "ManifestPersonalAssistantAgent"
 
 
+def test_build_agent_registers_manifest_import_tool_without_registry_edit(tmp_path):
+    package_dir = tmp_path / "imported_tool_agent"
+    manifest = {
+        "name": "Imported Tool Agent",
+        "version": "1.0.0",
+        "inherits": "core",
+        "description": "Agent with declarative tool import",
+        "tools": [{"name": "filesystem", "import": "core.tools.filesystem:FileSystemTool"}],
+        "workflows": ["planning"],
+        "knowledge": ["docs"],
+        "entrypoint": {"workflow": "planning"},
+    }
+    generate_package(package_dir, manifest)
+
+    runtime = build_agent(package_dir)
+
+    assert "filesystem" in runtime.tool_manager.list_tools()
+
+
+def test_validate_package_accepts_mapping_tool_specs(tmp_path):
+    package_dir = tmp_path / "tool_spec_agent"
+    package_dir.mkdir()
+    generate_package(
+        package_dir,
+        {
+            "name": "Spec Agent",
+            "version": "1.0.0",
+            "inherits": "core",
+            "description": "Package with mapping tool spec",
+            "tools": [{"name": "filesystem", "import": "core.tools.filesystem:FileSystemTool"}],
+            "workflows": ["planning"],
+            "knowledge": ["docs"],
+            "entrypoint": {"workflow": "planning"},
+        },
+    )
+
+    manifest = validate_package(package_dir)
+
+    assert manifest["tools"][0]["import"] == "core.tools.filesystem:FileSystemTool"
+
+
 def test_generate_package_writes_manifest(tmp_path):
     package_dir = tmp_path / "generated_agent"
     manifest = {
@@ -79,6 +120,27 @@ def test_validate_package_rejects_missing_fields(tmp_path):
     generate_package(package_dir, {"name": "Broken Agent"})
 
     with pytest.raises(ValueError, match="missing required field: version"):
+        validate_package(package_dir)
+
+
+def test_validate_package_rejects_tool_mapping_without_name(tmp_path):
+    package_dir = tmp_path / "broken_tool_agent"
+    package_dir.mkdir()
+    generate_package(
+        package_dir,
+        {
+            "name": "Broken Tool Agent",
+            "version": "1.0.0",
+            "inherits": "core",
+            "description": "Broken package",
+            "tools": [{"import": "core.tools.filesystem:FileSystemTool"}],
+            "workflows": ["planning"],
+            "knowledge": ["docs"],
+            "entrypoint": {"workflow": "planning"},
+        },
+    )
+
+    with pytest.raises(ValueError, match="tools\\[0\\]\\.name"):
         validate_package(package_dir)
 
 

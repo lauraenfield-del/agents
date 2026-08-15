@@ -10,6 +10,16 @@ tools:
   - sendblue
   - shopify
   - canva
+frontend:
+  connectors:
+    - type: chat_input
+      entrypoint: chat
+    - type: workspace_snapshot
+      source: assistant:workspace
+    - type: approval_queue
+      source: assistant:pending_approvals
+    - type: tool_registry
+      source: runtime.tools
 workflows:
   - intake
   - planning

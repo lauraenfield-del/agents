@@ -1,3 +1,4 @@
+from builders.build_agent import build_agent
 from core.memory.simple import SimpleMemory
 from core.runtime.personal_assistant import PersonalAssistantAgent
 
@@ -20,3 +21,13 @@ def test_status_snapshot_stores_only_redacted_response_metadata():
         "preview": "[redacted]",
         "length": len("api_key=super-secret"),
     }
+
+
+def test_personal_assistant_initializes_workspace_snapshot_from_manifest():
+    runtime = build_agent("/home/runner/work/agents/agents/packages/personal_assistant")
+
+    snapshot = runtime.memory.retrieve("assistant:workspace")
+
+    assert snapshot["assistant"]["workflow"] == "personal_assistant_controller"
+    assert {"sendblue", "shopify", "canva"}.issubset(set(snapshot["tools"]))
+    assert any(connector["type"] == "workspace_snapshot" for connector in snapshot["connectors"])

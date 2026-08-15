@@ -10,6 +10,7 @@ class PersonalAssistantAgent(ConversationalAgent):
 
     _STATUS_KEY = "assistant:last_status"
     _PENDING_KEY = "assistant:pending_approvals"
+    _WORKSPACE_KEY = "assistant:workspace"
 
     def chat(self, user_input: str) -> str:
         text = user_input.strip()
@@ -71,3 +72,35 @@ class PersonalAssistantAgent(ConversationalAgent):
             "assistant:last_response_redacted",
             {"redacted": True, "preview": "[redacted]", "length": len(response)},
         )
+        self.refresh_workspace_snapshot()
+
+    def refresh_workspace_snapshot(self) -> dict[str, Any] | None:
+        if self.memory is None:
+            return None
+        snapshot = self.workspace_snapshot()
+        self.memory.store(self._WORKSPACE_KEY, snapshot)
+        return snapshot
+
+    def workspace_snapshot(self) -> dict[str, Any]:
+        status = self.memory.retrieve(self._STATUS_KEY) if self.memory is not None else {}
+        pending = self.memory.retrieve(self._PENDING_KEY) if self.memory is not None else []
+        manifest = getattr(self, "manifest", {}) if isinstance(getattr(self, "manifest", {}), dict) else {}
+        frontend = manifest.get("frontend") if isinstance(manifest.get("frontend"), dict) else {}
+        return {
+            "assistant": {
+                "name": getattr(self, "_name", "Personal Assistant"),
+                "workflow": manifest.get("entrypoint", {}).get("workflow", "personal_assistant_controller"),
+            },
+            "status": status or {
+                "completed": "none",
+                "pending_approval": "none",
+                "next_step": "ready for a task",
+            },
+            "pending_approvals": pending or [],
+            "tools": self.tools.list_tools() if self.tools is not None else [],
+            "connectors": frontend.get("connectors", [
+                {"type": "chat_input", "entrypoint": "chat"},
+                {"type": "workspace_snapshot", "source": self._WORKSPACE_KEY},
+                {"type": "approval_queue", "source": self._PENDING_KEY},
+            ]),
+        }

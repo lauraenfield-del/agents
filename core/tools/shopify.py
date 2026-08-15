@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
 
 from core.interfaces.agent import Tool
 from core.tools.integration_common import execute_service_request
+
+
+_SHOPIFY_HOST_RE = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.myshopify\.com$")
 
 
 def _normalize_store_domain(store_domain: str) -> str | None:
@@ -18,7 +22,7 @@ def _normalize_store_domain(store_domain: str) -> str | None:
     if parsed.path not in {"", "/"}:
         return None
     hostname = (parsed.hostname or "").rstrip(".").lower()
-    if not hostname.endswith(".myshopify.com") or hostname == "myshopify.com":
+    if not _SHOPIFY_HOST_RE.fullmatch(hostname):
         return None
     return hostname
 

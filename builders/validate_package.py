@@ -41,7 +41,20 @@ def validate_package(package_dir: str | Path) -> dict:
     if not isinstance(workflow, str) or not workflow:
         raise ValueError("Package manifest entrypoint.workflow must be a non-empty string")
 
-    for list_field in ("tools", "workflows", "knowledge"):
+    for i, item in enumerate(manifest["tools"]):
+        if isinstance(item, str):
+            continue
+        if not isinstance(item, dict):
+            raise ValueError(
+                f"Package manifest field 'tools[{i}]' must be a string or mapping, got {type(item).__name__}"
+            )
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"Package manifest field 'tools[{i}].name' must be a non-empty string")
+        if "import" in item and (not isinstance(item["import"], str) or not item["import"].strip()):
+            raise ValueError(f"Package manifest field 'tools[{i}].import' must be a non-empty string")
+
+    for list_field in ("workflows", "knowledge"):
         for i, item in enumerate(manifest[list_field]):
             if not isinstance(item, str):
                 raise ValueError(

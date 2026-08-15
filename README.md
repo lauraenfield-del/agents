@@ -65,6 +65,11 @@ The repo currently ships these six packages:
 
 Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 
+Tool entries may be either:
+
+- a built-in tool name such as `filesystem`
+- a mapping such as `{name: my_tool, import: my_package.tools:MyTool}` for declarative custom-tool loading without editing `builders/build_agent.py`
+
 ### Builders and registry
 
 | Path | Purpose |
@@ -175,7 +180,7 @@ manifest = {
     "version": "1.0.0",
     "inherits": "core",
     "description": "A short description.",
-    "tools": ["filesystem"],
+    "tools": [{"name": "filesystem", "import": "core.tools.filesystem:FileSystemTool"}],
     "workflows": ["main_workflow"],
     "knowledge": ["domain_knowledge"],
     "entrypoint": {"workflow": "main_workflow"},
