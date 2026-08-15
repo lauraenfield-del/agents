@@ -82,7 +82,7 @@ def test_shopify_rejects_non_shopify_domain():
     )
 
     assert result["status"] == "error"
-    assert ".myshopify.com" in result["details"]
+    assert result["details"] == "store_domain must be a valid Shopify hostname ending in .myshopify.com."
 
 
 def test_shopify_rejects_lookalike_domain():
@@ -95,7 +95,7 @@ def test_shopify_rejects_lookalike_domain():
     )
 
     assert result["status"] == "error"
-    assert ".myshopify.com" in result["details"]
+    assert result["details"] == "store_domain must be a valid Shopify hostname ending in .myshopify.com."
 
 
 def test_integration_redirect_handler_blocks_disallowed_host():
