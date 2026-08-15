@@ -24,19 +24,60 @@ class _DummyResponse:
 
 
 class _DummyOpener:
-    def open(self, *_args, **_kwargs):
+    def __init__(self):
+        self.request = None
+
+    def open(self, req, *_args, **_kwargs):
+        self.request = req
         return _DummyResponse()
 
 
 def test_sendblue_tool_uses_secret_reference(monkeypatch):
-    monkeypatch.setenv("AGENT_SECRET_SENDBLUE_PRIMARY", "sb-token")
-    monkeypatch.setattr("core.tools.integration_common._build_service_opener", lambda *_args, **_kwargs: _DummyOpener())
+    monkeypatch.setenv("AGENT_SECRET_SENDBLUE_PRIMARY_ID", "sb-key-id")
+    monkeypatch.setenv("AGENT_SECRET_SENDBLUE_PRIMARY_SECRET", "sb-secret")
+    opener = _DummyOpener()
+    monkeypatch.setattr("core.tools.integration_common._build_service_opener", lambda *_args, **_kwargs: opener)
 
     tool = SendblueTool()
-    result = tool.execute(action="list_threads", secret_scope="sendblue", secret_name="primary")
+    result = tool.execute(
+        action="list_threads",
+        secret_scope="sendblue",
+        key_id_secret_name="primary_id",
+        secret_name="primary_secret",
+    )
     assert result["status"] == "ok"
     assert result["service"] == "sendblue"
-    assert result["credential"]["name"] == "primary"
+    assert result["credential"]["name"] == "primary_secret"
+    headers = {name.lower(): value for name, value in opener.request.header_items()}
+    assert headers["sb-api-key-id"] == "sb-key-id"
+    assert headers["sb-api-secret-key"] == "sb-secret"
+    assert "authorization" not in headers
+
+
+def test_sendblue_send_message_requires_explicit_approval():
+    tool = SendblueTool()
+    result = tool.execute(
+        action="send_message",
+        secret_scope="sendblue",
+        key_id_secret_name="primary_id",
+        secret_name="primary_secret",
+    )
+
+    assert result["status"] == "requires_approval"
+
+
+def test_sendblue_rejects_non_https_api_base():
+    tool = SendblueTool()
+    result = tool.execute(
+        action="list_threads",
+        secret_scope="sendblue",
+        key_id_secret_name="primary_id",
+        secret_name="primary_secret",
+        api_base="http://api.sendblue.co",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Only HTTPS URLs are supported for authenticated service requests."
 
 
 def test_shopify_update_requires_explicit_approval():
@@ -48,6 +89,20 @@ def test_shopify_update_requires_explicit_approval():
         secret_name="main",
     )
     assert result["status"] == "requires_approval"
+
+
+def test_shopify_update_requires_product_id_after_approval():
+    tool = ShopifyTool()
+    result = tool.execute(
+        action="update_product",
+        store_domain="example.myshopify.com",
+        secret_scope="shopify",
+        secret_name="main",
+        approved=True,
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "update_product requires a valid product_id."
 
 
 def test_shopify_normalizes_store_domain_before_request(monkeypatch):
@@ -68,8 +123,21 @@ def test_shopify_normalizes_store_domain_before_request(monkeypatch):
     )
 
     assert result["status"] == "ok"
-    assert captured["url"] == "https://example.myshopify.com/admin/api/2025-01/orders.json"
+    assert captured["url"] == "https://example.myshopify.com/admin/api/2026-07/orders.json"
     assert captured["allowed_hosts"] == ("example.myshopify.com",)
+
+
+def test_shopify_rejects_wrong_secret_scope():
+    tool = ShopifyTool()
+    result = tool.execute(
+        action="get_orders",
+        store_domain="example.myshopify.com",
+        secret_scope="sendblue",
+        secret_name="main",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Secret scope 'sendblue' is not allowed for shopify."
 
 
 def test_shopify_rejects_non_shopify_domain():
@@ -123,3 +191,16 @@ def test_canva_export_requires_explicit_approval():
         secret_name="primary",
     )
     assert result["status"] == "requires_approval"
+
+
+def test_canva_update_requires_valid_design_id_after_approval():
+    tool = CanvaTool()
+    result = tool.execute(
+        action="update_design",
+        secret_scope="canva",
+        secret_name="primary",
+        approved=True,
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "update_design requires a valid design_id."

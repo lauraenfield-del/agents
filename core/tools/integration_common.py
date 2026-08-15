@@ -59,6 +59,8 @@ def execute_service_request(
     secret_version: str | None,
     allowed_hosts: tuple[str, ...],
     extra_headers: dict[str, str] | None = None,
+    credential_headers: dict[str, tuple[str, str, str | None]] | None = None,
+    allowed_secret_scopes: tuple[str, ...] | None = None,
     authorization_scheme: str = "Bearer",
     auth_header_name: str = "Authorization",
 ) -> dict:
@@ -67,18 +69,38 @@ def execute_service_request(
         return {"status": "error", "details": url_err}
 
     store = CredentialStore()
+    allowed_scopes = {scope.lower() for scope in allowed_secret_scopes} if allowed_secret_scopes else None
+    normalized_scope = secret_scope.strip().lower()
+    if allowed_scopes and normalized_scope not in allowed_scopes:
+        return {
+            "status": "error",
+            "details": f"Secret scope '{secret_scope}' is not allowed for {service_name}.",
+        }
     try:
         api_token = store.resolve(secret_scope, secret_name, version=secret_version)
     except SecretResolutionError as exc:
         return {"status": "error", "details": str(exc)}
 
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
-    auth_value = f"{authorization_scheme} {api_token}".strip() if authorization_scheme else api_token
     headers = {
-        auth_header_name: auth_value,
         "Content-Type": "application/json",
         "User-Agent": "agents-framework/1.0",
     }
+    if auth_header_name:
+        auth_value = f"{authorization_scheme} {api_token}".strip() if authorization_scheme else api_token
+        headers[auth_header_name] = auth_value
+    if credential_headers:
+        for header_name, (scope, name, version) in credential_headers.items():
+            normalized_header_scope = scope.strip().lower()
+            if allowed_scopes and normalized_header_scope not in allowed_scopes:
+                return {
+                    "status": "error",
+                    "details": f"Secret scope '{scope}' is not allowed for {service_name}.",
+                }
+            try:
+                headers[header_name] = store.resolve(scope, name, version=version)
+            except SecretResolutionError as exc:
+                return {"status": "error", "details": str(exc)}
     if extra_headers:
         headers.update(extra_headers)
 

@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import re
+
 from core.interfaces.agent import Tool
 from core.tools.integration_common import execute_service_request
+
+
+_DESIGN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
 
 
 class CanvaTool(Tool):
@@ -19,7 +24,7 @@ class CanvaTool(Tool):
             "type": "object",
             "properties": {
                 "action": {"type": "string", "enum": ["create_design", "update_design", "export_design"]},
-                "path": {"type": "string"},
+                "design_id": {"type": "string"},
                 "payload": {"type": "object"},
                 "secret_scope": {"type": "string"},
                 "secret_name": {"type": "string"},
@@ -37,7 +42,7 @@ class CanvaTool(Tool):
         action: str,
         secret_scope: str,
         secret_name: str,
-        path: str = "",
+        design_id: str = "",
         payload: dict | None = None,
         secret_version: str | None = None,
         api_base: str = "https://api.canva.com",
@@ -46,18 +51,23 @@ class CanvaTool(Tool):
     ) -> dict:
         route_map = {
             "create_design": ("POST", "/rest/v1/designs"),
-            "update_design": ("PATCH", "/rest/v1/designs"),
             "export_design": ("POST", "/rest/v1/exports"),
         }
-        method, default_path = route_map[action]
         if action in {"update_design", "export_design"} and not approved:
             return {
                 "status": "requires_approval",
                 "details": f"{action} is high risk and requires approved=true.",
             }
-        endpoint = path or default_path
-        if not endpoint.startswith("/"):
-            endpoint = f"/{endpoint}"
+        if action == "update_design":
+            method = "PATCH"
+            if not _DESIGN_ID_RE.fullmatch(design_id):
+                return {
+                    "status": "error",
+                    "details": "update_design requires a valid design_id.",
+                }
+            endpoint = f"/rest/v1/designs/{design_id}"
+        else:
+            method, endpoint = route_map[action]
 
         return execute_service_request(
             service_name="canva",
@@ -69,4 +79,5 @@ class CanvaTool(Tool):
             secret_name=secret_name,
             secret_version=secret_version,
             allowed_hosts=("api.canva.com", "www.canva.com"),
+            allowed_secret_scopes=("canva",),
         )

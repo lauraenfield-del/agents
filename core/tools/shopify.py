@@ -8,6 +8,7 @@ from core.tools.integration_common import execute_service_request
 
 
 _SHOPIFY_HOST_RE = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.myshopify\.com$")
+_PRODUCT_ID_RE = re.compile(r"^[1-9][0-9]*$")
 
 
 def _normalize_store_domain(store_domain: str) -> str | None:
@@ -47,8 +48,8 @@ class ShopifyTool(Tool):
                 },
                 "store_domain": {"type": "string"},
                 "api_version": {"type": "string"},
+                "product_id": {"type": "string"},
                 "payload": {"type": "object"},
-                "path": {"type": "string"},
                 "secret_scope": {"type": "string"},
                 "secret_name": {"type": "string"},
                 "secret_version": {"type": "string"},
@@ -65,9 +66,9 @@ class ShopifyTool(Tool):
         store_domain: str,
         secret_scope: str,
         secret_name: str,
-        api_version: str = "2025-01",
+        api_version: str = "2026-07",
+        product_id: str = "",
         payload: dict | None = None,
-        path: str = "",
         secret_version: str | None = None,
         timeout_seconds: float = 20,
         approved: bool = False,
@@ -75,23 +76,28 @@ class ShopifyTool(Tool):
         route_map = {
             "get_orders": ("GET", f"/admin/api/{api_version}/orders.json"),
             "get_customers": ("GET", f"/admin/api/{api_version}/customers.json"),
-            "update_product": ("PUT", f"/admin/api/{api_version}/products.json"),
         }
-        method, default_path = route_map[action]
         if action == "update_product" and not approved:
             return {
                 "status": "requires_approval",
                 "details": "update_product is high risk and requires approved=true.",
             }
+        if action == "update_product":
+            method = "PUT"
+            if not _PRODUCT_ID_RE.fullmatch(product_id):
+                return {
+                    "status": "error",
+                    "details": "update_product requires a valid product_id.",
+                }
+            endpoint = f"/admin/api/{api_version}/products/{product_id}.json"
+        else:
+            method, endpoint = route_map[action]
         normalized_store_domain = _normalize_store_domain(store_domain)
         if normalized_store_domain is None:
             return {
                 "status": "error",
                 "details": "store_domain must be a valid Shopify hostname ending in .myshopify.com.",
             }
-        endpoint = path or default_path
-        if not endpoint.startswith("/"):
-            endpoint = f"/{endpoint}"
         url = f"https://{normalized_store_domain}{endpoint}"
 
         return execute_service_request(
@@ -104,6 +110,7 @@ class ShopifyTool(Tool):
             secret_name=secret_name,
             secret_version=secret_version,
             allowed_hosts=(normalized_store_domain,),
+            allowed_secret_scopes=("shopify",),
             authorization_scheme="",
             auth_header_name="X-Shopify-Access-Token",
         )

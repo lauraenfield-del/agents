@@ -13,7 +13,7 @@ The executable framework lives in `core/`, `builders/`, `packages/`, `registry/`
 agents/
 ├── builders/      Package validation, generation, registration, and runtime assembly
 ├── core/          Runtime, tools, models, memory, orchestration, and validation code
-├── packages/      Six manifest-only agent packages
+├── packages/      Seven manifest-only agent packages
 ├── registry/      JSON package indexes
 ├── skills/        Standalone skill/reference content; not loaded by build_agent()
 ├── tests/         Pytest suite
@@ -51,7 +51,7 @@ agents/
 
 ### Packaged agents
 
-The repo currently ships these six packages:
+The repo currently ships these seven packages:
 
 | Package | Description |
 |---|---|
@@ -118,12 +118,13 @@ Sendblue, Shopify, and Canva tools resolve credentials from environment variable
 Use `AGENT_SECRET_<scope>_<name>` (or `AGENT_SECRET_<scope>_<name>_V<version>` for rotated versions), e.g.:
 
 ```bash
-export AGENT_SECRET_SENDBLUE_PRIMARY="token-value"
+export AGENT_SECRET_SENDBLUE_PRIMARY_ID="key-id-value"
+export AGENT_SECRET_SENDBLUE_PRIMARY_SECRET="secret-key-value"
 export AGENT_SECRET_SHOPIFY_MAIN="token-value"
 export AGENT_SECRET_CANVA_PRIMARY="token-value"
 ```
 
-Then call tools with `secret_scope` and `secret_name` references.
+Then call tools with `secret_scope` and `secret_name` references (`key_id_secret_name` is also required for Sendblue).
 
 ## Running agents
 

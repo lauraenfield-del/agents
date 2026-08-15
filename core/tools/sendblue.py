@@ -22,12 +22,15 @@ class SendblueTool(Tool):
                 "path": {"type": "string"},
                 "payload": {"type": "object"},
                 "secret_scope": {"type": "string"},
+                "key_id_secret_name": {"type": "string"},
                 "secret_name": {"type": "string"},
+                "key_id_secret_version": {"type": "string"},
                 "secret_version": {"type": "string"},
                 "api_base": {"type": "string"},
                 "timeout_seconds": {"type": "number", "minimum": 1, "maximum": 60},
+                "approved": {"type": "boolean"},
             },
-            "required": ["action", "secret_scope", "secret_name"],
+            "required": ["action", "secret_scope", "key_id_secret_name", "secret_name"],
             "additionalProperties": False,
         }
 
@@ -35,12 +38,15 @@ class SendblueTool(Tool):
         self,
         action: str,
         secret_scope: str,
+        key_id_secret_name: str,
         secret_name: str,
         path: str = "",
         payload: dict | None = None,
+        key_id_secret_version: str | None = None,
         secret_version: str | None = None,
         api_base: str = "https://api.sendblue.co",
         timeout_seconds: float = 20,
+        approved: bool = False,
     ) -> dict:
         route_map = {
             "send_message": ("POST", "/api/send-message"),
@@ -48,6 +54,11 @@ class SendblueTool(Tool):
             "get_contact": ("GET", "/api/contacts"),
         }
         method, default_path = route_map[action]
+        if action == "send_message" and not approved:
+            return {
+                "status": "requires_approval",
+                "details": "send_message is high risk and requires approved=true.",
+            }
         endpoint = path or default_path
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
@@ -62,4 +73,10 @@ class SendblueTool(Tool):
             secret_name=secret_name,
             secret_version=secret_version,
             allowed_hosts=("api.sendblue.co",),
+            credential_headers={
+                "sb-api-key-id": (secret_scope, key_id_secret_name, key_id_secret_version),
+            },
+            allowed_secret_scopes=("sendblue",),
+            authorization_scheme="",
+            auth_header_name="sb-api-secret-key",
         )
