@@ -60,7 +60,7 @@ def execute_service_request(
     allowed_hosts: tuple[str, ...],
     extra_headers: dict[str, str] | None = None,
     credential_headers: dict[str, tuple[str, str, str | None]] | None = None,
-    allowed_secret_scopes: tuple[str, ...] | None = None,
+    allowed_secret_scopes: tuple[str, ...],
     authorization_scheme: str = "Bearer",
     auth_header_name: str = "Authorization",
 ) -> dict:
@@ -69,9 +69,9 @@ def execute_service_request(
         return {"status": "error", "details": url_err}
 
     store = CredentialStore()
-    allowed_scopes = {scope.lower() for scope in allowed_secret_scopes} if allowed_secret_scopes else None
+    allowed_scopes = {scope.lower() for scope in allowed_secret_scopes}
     normalized_scope = secret_scope.strip().lower()
-    if allowed_scopes and normalized_scope not in allowed_scopes:
+    if normalized_scope not in allowed_scopes:
         return {
             "status": "error",
             "details": f"Secret scope '{secret_scope}' is not allowed for {service_name}.",
@@ -92,7 +92,7 @@ def execute_service_request(
     if credential_headers:
         for header_name, (scope, name, version) in credential_headers.items():
             normalized_header_scope = scope.strip().lower()
-            if allowed_scopes and normalized_header_scope not in allowed_scopes:
+            if normalized_header_scope not in allowed_scopes:
                 return {
                     "status": "error",
                     "details": f"Secret scope '{scope}' is not allowed for {service_name}.",

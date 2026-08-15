@@ -93,6 +93,19 @@ def test_sendblue_rejects_unknown_action():
     assert result["details"] == "Unsupported Sendblue action: unknown."
 
 
+def test_sendblue_rejects_wrong_secret_scope():
+    tool = SendblueTool()
+    result = tool.execute(
+        action="list_threads",
+        secret_scope="shopify",
+        key_id_secret_name="primary_id",
+        secret_name="primary_secret",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Secret scope 'shopify' is not allowed for sendblue."
+
+
 def test_shopify_update_requires_explicit_approval():
     tool = ShopifyTool()
     result = tool.execute(
@@ -242,3 +255,15 @@ def test_canva_rejects_unknown_action():
 
     assert result["status"] == "error"
     assert result["details"] == "Unsupported Canva action: unknown."
+
+
+def test_canva_rejects_wrong_secret_scope():
+    tool = CanvaTool()
+    result = tool.execute(
+        action="create_design",
+        secret_scope="sendblue",
+        secret_name="primary",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Secret scope 'sendblue' is not allowed for canva."
