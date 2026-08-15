@@ -68,4 +68,4 @@ class PersonalAssistantAgent(ConversationalAgent):
                 "next_step": "await user direction or approval",
             },
         )
-        self.memory.store("assistant:last_response_redacted", json.dumps({"response": response})[:500])
+        self.memory.store("assistant:last_response_redacted", "***REDACTED***")
