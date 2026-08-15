@@ -1,7 +1,26 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from core.interfaces.agent import Tool
 from core.tools.integration_common import execute_service_request
+
+
+def _normalize_store_domain(store_domain: str) -> str | None:
+    candidate = store_domain.strip()
+    if not candidate:
+        return None
+    parsed = urlparse(candidate if "://" in candidate else f"https://{candidate}")
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if parsed.params or parsed.query or parsed.fragment or parsed.username or parsed.password:
+        return None
+    if parsed.path not in {"", "/"}:
+        return None
+    hostname = (parsed.hostname or "").rstrip(".").lower()
+    if not hostname.endswith(".myshopify.com") or hostname == "myshopify.com":
+        return None
+    return hostname
 
 
 class ShopifyTool(Tool):
@@ -60,20 +79,16 @@ class ShopifyTool(Tool):
                 "status": "requires_approval",
                 "details": "update_product is high risk and requires approved=true.",
             }
+        normalized_store_domain = _normalize_store_domain(store_domain)
+        if normalized_store_domain is None:
+            return {
+                "status": "error",
+                "details": "store_domain must be a valid Shopify hostname ending in .myshopify.com.",
+            }
         endpoint = path or default_path
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
-
-        clean_domain = store_domain.strip()
-        clean_domain = clean_domain.removeprefix("https://").removeprefix("http://").rstrip("/")
-        clean_domain = clean_domain.split("/", 1)[0]
-        if not clean_domain.lower().endswith(".myshopify.com"):
-            return {
-                "status": "error",
-                "details": "store_domain must be a *.myshopify.com domain for the Shopify Admin API.",
-            }
-
-        url = f"https://{clean_domain}{endpoint}"
+        url = f"https://{normalized_store_domain}{endpoint}"
 
         return execute_service_request(
             service_name="shopify",
@@ -84,7 +99,7 @@ class ShopifyTool(Tool):
             secret_scope=secret_scope,
             secret_name=secret_name,
             secret_version=secret_version,
-            allowed_hosts=(clean_domain,),
+            allowed_hosts=(normalized_store_domain,),
             authorization_scheme="",
             auth_header_name="X-Shopify-Access-Token",
         )

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from core.runtime.conversational import ConversationalAgent
@@ -68,4 +67,7 @@ class PersonalAssistantAgent(ConversationalAgent):
                 "next_step": "await user direction or approval",
             },
         )
-        self.memory.store("assistant:last_response_redacted", "***REDACTED***")
+        self.memory.store(
+            "assistant:last_response_redacted",
+            {"redacted": True, "preview": "[redacted]", "length": len(response)},
+        )
