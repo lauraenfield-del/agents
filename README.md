@@ -39,7 +39,7 @@ agents/
 - `model/` for mock, OpenAI, and Anthropic adapters plus provider selection
 - `orchestration/` for workflow coordination
 - `runtime/` for `AgentRuntime` and `ConversationalAgent`
-- `tools/` for filesystem, terminal, `web_fetch`/`web_search` (plus `browser` alias), and sequential thinking (`think`) tools; `communication` is implemented but is not registered by `builders/build_agent.py` by default.
+- `tools/` for filesystem, terminal, `web_fetch`/`web_search` (plus `browser` alias), sequential thinking (`think`), and integration tools for Sendblue, Shopify, and Canva.
 - `validation/` for schema and manifest validation
 
 `AgentRuntime.start()` publishes:
@@ -61,6 +61,7 @@ The repo currently ships these six packages:
 | `marketing` | Marketing workflow agent |
 | `social_media` | Social media workflow agent |
 | `customer_support` | Customer support agent |
+| `personal_assistant` | Approval-aware personal operations agent with Sendblue/Shopify/Canva tool wiring |
 
 Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 
@@ -105,6 +106,19 @@ Then configure one of these environment variables:
 | `ANTHROPIC_API_KEY` | Anthropic | `claude-3-haiku-20240307` | `ANTHROPIC_MODEL` |
 
 `builders.build_agent.build_agent()` uses `core.model.factory.create_model()`, which checks `OPENAI_API_KEY` first, then `ANTHROPIC_API_KEY`. If neither key is set, it warns and falls back to `MockModel`.
+
+### Integration credential references
+
+Sendblue, Shopify, and Canva tools resolve credentials from environment variables and never require raw secrets in prompt text.  
+Use `AGENT_SECRET_<scope>_<name>` (or `AGENT_SECRET_<scope>_<name>_V<version>` for rotated versions), e.g.:
+
+```bash
+export AGENT_SECRET_SEND_BLUE_PRIMARY="token-value"
+export AGENT_SECRET_SHOPIFY_MAIN="token-value"
+export AGENT_SECRET_CANVA_PRIMARY="token-value"
+```
+
+Then call tools with `secret_scope` and `secret_name` references.
 
 ## Running agents
 

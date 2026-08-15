@@ -11,8 +11,12 @@ from core.interfaces.agent import Model
 from core.memory.simple import SimpleMemory
 from core.runtime.agent import AgentRuntime
 from core.runtime.conversational import ConversationalAgent
+from core.runtime.personal_assistant import PersonalAssistantAgent
+from core.tools.canva import CanvaTool
 from core.tools.filesystem import FileSystemTool
 from core.tools.manager import ToolManager
+from core.tools.sendblue import SendblueTool
+from core.tools.shopify import ShopifyTool
 from core.tools.search import WebSearchTool
 from core.tools.terminal import TerminalTool
 from core.tools.think import SequentialThinkingTool
@@ -45,6 +49,17 @@ class ManifestAgent(ConversationalAgent):
         self.manifest = manifest
 
 
+class ManifestPersonalAssistantAgent(PersonalAssistantAgent):
+    """Personal assistant variant with stricter execution guardrails."""
+
+    def __init__(self, manifest: dict) -> None:
+        super().__init__(
+            name=manifest.get("name", "Personal Assistant"),
+            system_prompt=_make_system_prompt(manifest),
+        )
+        self.manifest = manifest
+
+
 # ---------------------------------------------------------------------------
 # Tool registry helpers
 # ---------------------------------------------------------------------------
@@ -55,6 +70,9 @@ _TOOL_REGISTRY: dict[str, type] = {
     "web_search": WebSearchTool,
     "think": SequentialThinkingTool,
     "terminal": TerminalTool,
+    "sendblue": SendblueTool,
+    "shopify": ShopifyTool,
+    "canva": CanvaTool,
     # "browser" is an alias for web_fetch for manifest compatibility
     "browser": WebFetchTool,
 }
@@ -141,9 +159,11 @@ def build_agent(package_dir: str | Path) -> AgentRuntime:
     manifest = validate_package(package_dir)
     tool_manager = ToolManager()
     _register_known_tools(tool_manager, manifest["tools"])
+    is_personal_assistant = manifest.get("entrypoint", {}).get("workflow") == "personal_assistant_controller"
+    agent_cls = ManifestPersonalAssistantAgent if is_personal_assistant else ManifestAgent
 
     return AgentRuntime(
-        agent=ManifestAgent(manifest),
+        agent=agent_cls(manifest),
         event_bus=EventBus(),
         tool_manager=tool_manager,
         memory=SimpleMemory(),

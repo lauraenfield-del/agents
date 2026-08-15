@@ -20,6 +20,13 @@
     "path": "packages/customer_support",
     "version": "1.0.0"
   },
+  "personal_assistant": {
+    "description": "End-to-end personal operations assistant for passive-income workflows with approval-aware execution and secure credential references.",
+    "entrypoint": "personal_assistant_controller",
+    "name": "Personal Assistant Agent",
+    "path": "packages/personal_assistant",
+    "version": "1.0.0"
+  },
   "marketing": {
     "description": "Agent for marketing campaign planning, lead generation, and performance analysis.",
     "entrypoint": "marketing_controller",

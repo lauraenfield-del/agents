@@ -90,6 +90,7 @@ The repository currently includes these packages:
 - autonomous
 - coding
 - customer_support
+- personal_assistant
 - marketing
 - research
 - social_media

@@ -47,6 +47,13 @@ def test_build_agent_creates_runtime_with_known_tools():
     assert "filesystem" in runtime.tool_manager.list_tools()
 
 
+def test_build_personal_assistant_registers_integration_tools():
+    runtime = build_agent(PACKAGES_DIR / "personal_assistant")
+    names = set(runtime.tool_manager.list_tools())
+    assert {"sendblue", "shopify", "canva"}.issubset(names)
+    assert runtime.agent.__class__.__name__ == "ManifestPersonalAssistantAgent"
+
+
 def test_generate_package_writes_manifest(tmp_path):
     package_dir = tmp_path / "generated_agent"
     manifest = {
