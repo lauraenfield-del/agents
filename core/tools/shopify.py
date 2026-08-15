@@ -63,7 +63,17 @@ class ShopifyTool(Tool):
         endpoint = path or default_path
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
-        url = f"https://{store_domain.rstrip('/')}{endpoint}"
+
+        clean_domain = store_domain.strip()
+        clean_domain = clean_domain.removeprefix("https://").removeprefix("http://").rstrip("/")
+        clean_domain = clean_domain.split("/", 1)[0]
+        if not clean_domain.lower().endswith(".myshopify.com"):
+            return {
+                "status": "error",
+                "details": "store_domain must be a *.myshopify.com domain for the Shopify Admin API.",
+            }
+
+        url = f"https://{clean_domain}{endpoint}"
 
         return execute_service_request(
             service_name="shopify",
@@ -74,7 +84,7 @@ class ShopifyTool(Tool):
             secret_scope=secret_scope,
             secret_name=secret_name,
             secret_version=secret_version,
-            allowed_hosts=(store_domain,),
+            allowed_hosts=(clean_domain,),
             authorization_scheme="",
             auth_header_name="X-Shopify-Access-Token",
         )
