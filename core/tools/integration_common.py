@@ -61,7 +61,26 @@ def execute_service_request(
         headers.update(extra_headers)
 
     req = request.Request(url=url, method=method.upper(), headers=headers, data=body)
-    opener = _build_ssrf_safe_opener()
+    from core.tools.web import (
+        _SSRFSafeHTTPHandler,
+        _SSRFSafeHTTPSHandler,
+        _SSRFSafeRedirectHandler,
+    )
+
+    class _AllowListedRedirectHandler(_SSRFSafeRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            parsed_redirect = urlparse(newurl)
+            if not _host_allowed(parsed_redirect.hostname or "", allowed_hosts):
+                raise error.URLError(
+                    f"Redirect blocked: host '{parsed_redirect.hostname or ''}' is not in the {service_name} allow-list."
+                )
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    opener = request.build_opener(
+        _AllowListedRedirectHandler,
+        _SSRFSafeHTTPHandler,
+        _SSRFSafeHTTPSHandler,
+    )
     try:
         with opener.open(req, timeout=timeout_seconds) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
