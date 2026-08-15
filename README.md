@@ -180,7 +180,10 @@ manifest = {
     "version": "1.0.0",
     "inherits": "core",
     "description": "A short description.",
-    "tools": [{"name": "filesystem", "import": "core.tools.filesystem:FileSystemTool"}],
+    "tools": [
+        "filesystem",
+        {"name": "custom_tool", "import": "my_package.tools:MyTool"},
+    ],
     "workflows": ["main_workflow"],
     "knowledge": ["domain_knowledge"],
     "entrypoint": {"workflow": "main_workflow"},

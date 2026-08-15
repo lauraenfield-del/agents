@@ -84,7 +84,8 @@ class PersonalAssistantAgent(ConversationalAgent):
     def workspace_snapshot(self) -> dict[str, Any]:
         status = self.memory.retrieve(self._STATUS_KEY) if self.memory is not None else {}
         pending = self.memory.retrieve(self._PENDING_KEY) if self.memory is not None else []
-        manifest = getattr(self, "manifest", {}) if isinstance(getattr(self, "manifest", {}), dict) else {}
+        manifest_value = getattr(self, "manifest", {})
+        manifest = manifest_value if isinstance(manifest_value, dict) else {}
         frontend = manifest.get("frontend") if isinstance(manifest.get("frontend"), dict) else {}
         return {
             "assistant": {

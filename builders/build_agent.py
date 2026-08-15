@@ -136,12 +136,12 @@ def _register_known_tools(tool_manager: ToolManager, tool_names: list[str | dict
             if instance.name not in registered:
                 tool_manager.register_tool(instance)
                 registered.add(instance.name)
-            if not isinstance(raw_tool, str) and raw_tool["name"] != instance.name:
-                warnings.warn(
-                    f"Manifest tool '{raw_tool['name']}' was registered as canonical tool name '{instance.name}'.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
+                if not isinstance(raw_tool, str) and raw_tool["name"] != instance.name:
+                    warnings.warn(
+                        f"Manifest tool '{raw_tool['name']}' was registered as canonical tool name '{instance.name}'.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
         else:
             msg = (
                 f"Manifest references unknown tool '{tool_name}'. "

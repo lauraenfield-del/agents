@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from builders.build_agent import build_agent
 from core.memory.simple import SimpleMemory
 from core.runtime.personal_assistant import PersonalAssistantAgent
@@ -24,7 +26,7 @@ def test_status_snapshot_stores_only_redacted_response_metadata():
 
 
 def test_personal_assistant_initializes_workspace_snapshot_from_manifest():
-    runtime = build_agent("/home/runner/work/agents/agents/packages/personal_assistant")
+    runtime = build_agent(Path(__file__).parent.parent / "packages" / "personal_assistant")
 
     snapshot = runtime.memory.retrieve("assistant:workspace")
 
