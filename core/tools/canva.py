@@ -53,6 +53,8 @@ class CanvaTool(Tool):
             "create_design": ("POST", "/rest/v1/designs"),
             "export_design": ("POST", "/rest/v1/exports"),
         }
+        if action not in route_map and action != "update_design":
+            return {"status": "error", "details": f"Unsupported Canva action: {action}."}
         if action in {"update_design", "export_design"} and not approved:
             return {
                 "status": "requires_approval",

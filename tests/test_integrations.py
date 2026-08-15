@@ -80,6 +80,19 @@ def test_sendblue_rejects_non_https_api_base():
     assert result["details"] == "Only HTTPS URLs are supported for authenticated service requests."
 
 
+def test_sendblue_rejects_unknown_action():
+    tool = SendblueTool()
+    result = tool.execute(
+        action="unknown",
+        secret_scope="sendblue",
+        key_id_secret_name="primary_id",
+        secret_name="primary_secret",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Unsupported Sendblue action: unknown."
+
+
 def test_shopify_update_requires_explicit_approval():
     tool = ShopifyTool()
     result = tool.execute(
@@ -138,6 +151,19 @@ def test_shopify_rejects_wrong_secret_scope():
 
     assert result["status"] == "error"
     assert result["details"] == "Secret scope 'sendblue' is not allowed for shopify."
+
+
+def test_shopify_rejects_unknown_action():
+    tool = ShopifyTool()
+    result = tool.execute(
+        action="unknown",
+        store_domain="example.myshopify.com",
+        secret_scope="shopify",
+        secret_name="main",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Unsupported Shopify action: unknown."
 
 
 def test_shopify_rejects_non_shopify_domain():
@@ -204,3 +230,15 @@ def test_canva_update_requires_valid_design_id_after_approval():
 
     assert result["status"] == "error"
     assert result["details"] == "update_design requires a valid design_id."
+
+
+def test_canva_rejects_unknown_action():
+    tool = CanvaTool()
+    result = tool.execute(
+        action="unknown",
+        secret_scope="canva",
+        secret_name="primary",
+    )
+
+    assert result["status"] == "error"
+    assert result["details"] == "Unsupported Canva action: unknown."

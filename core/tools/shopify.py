@@ -77,6 +77,8 @@ class ShopifyTool(Tool):
             "get_orders": ("GET", f"/admin/api/{api_version}/orders.json"),
             "get_customers": ("GET", f"/admin/api/{api_version}/customers.json"),
         }
+        if action not in route_map and action != "update_product":
+            return {"status": "error", "details": f"Unsupported Shopify action: {action}."}
         if action == "update_product" and not approved:
             return {
                 "status": "requires_approval",

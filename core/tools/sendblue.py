@@ -53,6 +53,8 @@ class SendblueTool(Tool):
             "list_threads": ("GET", "/api/threads"),
             "get_contact": ("GET", "/api/contacts"),
         }
+        if action not in route_map:
+            return {"status": "error", "details": f"Unsupported Sendblue action: {action}."}
         method, default_path = route_map[action]
         if action == "send_message" and not approved:
             return {
