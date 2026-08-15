@@ -48,7 +48,7 @@ class PersonalAssistantAgent(ConversationalAgent):
         results = super()._execute_tool_calls(tool_calls)
         pending: list[dict[str, Any]] = []
         for call, result in zip(tool_calls, results):
-            if "requires_approval" in result.get("result", ""):
+            if result.get("status") == "requires_approval" or "requires_approval" in result.get("result", ""):
                 pending.append({"tool": call["tool"], "args": call["args"]})
 
         if self.memory is not None and pending:

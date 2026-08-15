@@ -113,7 +113,7 @@ Sendblue, Shopify, and Canva tools resolve credentials from environment variable
 Use `AGENT_SECRET_<scope>_<name>` (or `AGENT_SECRET_<scope>_<name>_V<version>` for rotated versions), e.g.:
 
 ```bash
-export AGENT_SECRET_SEND_BLUE_PRIMARY="token-value"
+export AGENT_SECRET_SENDBLUE_PRIMARY="token-value"
 export AGENT_SECRET_SHOPIFY_MAIN="token-value"
 export AGENT_SECRET_CANVA_PRIMARY="token-value"
 ```
