@@ -87,9 +87,6 @@ class PersonalAssistantAgent(ConversationalAgent):
                 result = self.tools.execute_tool(tool_name, **args)
                 result_text = str(result)
                 status = result.get("status") if isinstance(result, dict) else ""
-                if status == "requires_approval" or "requires_approval" in result_text:
-                    token = self._approval_token(tool_name, args)
-                    pending.append({"tool": tool_name, "args": args, "approval_token": token})
                 results.append({"tool": tool_name, "status": status or "", "result": result_text})
             except Exception as exc:  # noqa: BLE001
                 results.append({"tool": tool_name, "result": f"Error: {exc}"})
