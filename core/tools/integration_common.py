@@ -19,8 +19,8 @@ def _host_allowed(hostname: str, allowed_hosts: tuple[str, ...]) -> bool:
 
 def _validate_service_url(url: str, service_name: str, allowed_hosts: tuple[str, ...]) -> str | None:
     parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"}:
-        return "Only http/https URLs are supported."
+    if parsed.scheme != "https":
+        return "Only HTTPS URLs are supported for authenticated service requests."
     if not _host_allowed(parsed.hostname or "", allowed_hosts):
         return f"Host '{parsed.hostname or ''}' is not in the {service_name} allow-list."
     return _validate_url_for_ssrf(url)
