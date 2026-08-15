@@ -44,7 +44,11 @@ class PersonalAssistantAgent(ConversationalAgent):
             self._update_status_snapshot(approval_response)
             return approval_response
 
-        response = super().chat(user_input)
+        self._pending_turn: list[dict[str, Any]] = []
+        try:
+            response = super().chat(user_input)
+        finally:
+            del self._pending_turn
         self._update_status_snapshot(response)
         return response
 
@@ -62,7 +66,7 @@ class PersonalAssistantAgent(ConversationalAgent):
     def _execute_tool_calls(self, tool_calls: list[dict[str, Any]]) -> list[dict[str, str]]:
         assert self.tools is not None
         results: list[dict[str, str]] = []
-        pending: list[dict[str, Any]] = []
+        pending: list[dict[str, Any]] = getattr(self, "_pending_turn", [])
         known_tools = set(self.tools.list_tools())
 
         for call in tool_calls:

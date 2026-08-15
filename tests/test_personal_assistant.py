@@ -56,7 +56,7 @@ def test_status_snapshot_stores_only_redacted_response_metadata():
     }
 
 
-def test_execute_tool_calls_clears_pending_queue_when_empty():
+def test_execute_tool_calls_replaces_stale_pending_queue_when_empty():
     agent = PersonalAssistantAgent(name="PA")
     agent.memory = SimpleMemory()
     agent.memory.store(agent._PENDING_KEY, [{"tool": "sendblue", "args": {}, "approval_token": "oldtoken123456"}])
@@ -87,6 +87,24 @@ def test_execute_tool_calls_queues_gated_actions_before_execution():
     assert pending[0]["tool"] == "sendblue"
     assert pending[0]["args"] == {"action": "send_message"}
     assert "approve " in results[0]["result"]
+
+
+def test_execute_tool_calls_preserves_pending_within_active_turn():
+    agent = PersonalAssistantAgent(name="PA")
+    agent.memory = SimpleMemory()
+    tool = _ApprovalTool()
+    manager = ToolManager()
+    manager.register_tool(tool)
+    agent.tools = manager
+    agent._pending_turn = []
+
+    agent._execute_tool_calls([{"tool": "sendblue", "args": {"action": "send_message"}}])
+    agent._execute_tool_calls([{"tool": "sendblue", "args": {"action": "list_threads"}}])
+
+    pending = agent.memory.retrieve(agent._PENDING_KEY)
+    assert len(pending) == 1
+    assert pending[0]["tool"] == "sendblue"
+    del agent._pending_turn
 
 
 def test_chat_approval_executes_matching_pending_request():
