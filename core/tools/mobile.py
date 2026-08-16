@@ -149,6 +149,7 @@ class MobileAutomationTool(Tool):
         last_error: Exception | None = None
         max_retries = max(1, int(retries))
         total_latency = 0.0
+        last_latency = 0.0
 
         for attempt in range(1, max_retries + 1):
             started_at = time.perf_counter()
@@ -166,6 +167,7 @@ class MobileAutomationTool(Tool):
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
                 latency = time.perf_counter() - started_at
+                last_latency = latency
                 total_latency += latency
                 error_type = exc.__class__.__name__
                 self._logger.error(
@@ -180,11 +182,11 @@ class MobileAutomationTool(Tool):
                 )
 
         if last_error is None:
-            raise RuntimeError("mobile action failed without captured exception")
+            last_error = RuntimeError("mobile action failed without captured exception")
         self.performance_logger.log_action(
             action=action,
             status="failed",
-            latency=total_latency,
+            latency=last_latency,
             error=last_error.__class__.__name__,
         )
         return {

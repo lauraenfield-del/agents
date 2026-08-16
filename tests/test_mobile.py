@@ -81,6 +81,7 @@ def test_mobile_run_accepts_json_and_retries_with_structured_fail_log(monkeypatc
     assert result["status"] == "failed"
     assert result["attempts"] == 3
     assert result["error"] == "ElementNotFound"
+    assert driver.tap_calls == 3
     assert captured_logs
     payload = json.loads(captured_logs[-1])
     assert payload == {"action": "tap", "status": "failed", "error": "ElementNotFound"}
