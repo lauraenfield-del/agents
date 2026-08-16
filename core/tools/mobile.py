@@ -149,32 +149,25 @@ class MobileAutomationTool(Tool):
     ) -> dict[str, Any]:
         last_error: Exception | None = None
         max_retries = max(1, int(retries))
+        total_latency = 0.0
 
         for attempt in range(1, max_retries + 1):
             started_at = time.perf_counter()
             try:
                 result = self._run_with_timeout(action_func, timeout_seconds)
                 latency = time.perf_counter() - started_at
-                self.performance_logger.log_action(
-                    action=action,
-                    status="success",
-                    latency=latency,
-                )
+                total_latency += latency
+                self.performance_logger.log_action(action=action, status="success", latency=total_latency)
                 if isinstance(result, dict):
                     result.setdefault("action", action)
                     result["attempts"] = attempt
-                    result["latency"] = latency
+                    result["latency"] = total_latency
                 return result
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
                 latency = time.perf_counter() - started_at
+                total_latency += latency
                 error_type = exc.__class__.__name__
-                self.performance_logger.log_action(
-                    action=action,
-                    status="failed",
-                    latency=latency,
-                    error=error_type,
-                )
                 self._logger.error(
                     json.dumps(
                         {
@@ -187,6 +180,12 @@ class MobileAutomationTool(Tool):
                 )
 
         assert last_error is not None
+        self.performance_logger.log_action(
+            action=action,
+            status="failed",
+            latency=total_latency,
+            error=last_error.__class__.__name__,
+        )
         return {
             "status": "failed",
             "action": action,
