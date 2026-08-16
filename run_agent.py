@@ -39,6 +39,7 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
         }
 
     mobile_tool.start_performance_run()
+    per_find_retries = 1
     workflow_log: list[dict] = []
     workflow_log.append({"step": "launch_app", "status": "success"})
 
@@ -47,7 +48,7 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
             "action": "find_element",
             "by": "accessibility id",
             "value": "ad_banner",
-            "retries": 1,
+            "retries": per_find_retries,
         }
     )
     workflow_log.append({"step": "find_element", "result": found})
@@ -73,7 +74,7 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
                 "action": "find_element",
                 "by": "accessibility id",
                 "value": "ad_banner",
-                "retries": 1,
+                "retries": per_find_retries,
             }
         )
         workflow_log.append({"step": "find_element", "result": found})

@@ -156,11 +156,12 @@ class MobileAutomationTool(Tool):
                 result = self._run_with_timeout(action_func, timeout_seconds)
                 latency = time.perf_counter() - started_at
                 total_latency += latency
-                self.performance_logger.log_action(action=action, status="success", latency=total_latency)
+                self.performance_logger.log_action(action=action, status="success", latency=latency)
                 if isinstance(result, dict):
                     result.setdefault("action", action)
                     result["attempts"] = attempt
-                    result["latency"] = total_latency
+                    result["latency"] = latency
+                    result["total_latency"] = total_latency
                 return result
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
