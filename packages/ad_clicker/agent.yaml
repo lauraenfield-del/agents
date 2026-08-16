@@ -1,0 +1,12 @@
+name: Ad Clicker Agent
+version: 1.0.0
+inherits: core
+description: Agent that navigates a mobile app, finds ad elements, taps them, logs actions, and repeats.
+tools:
+  - mobile_automation
+workflows:
+  - ad_navigation
+knowledge:
+  - mobile_ad_navigation
+entrypoint:
+  workflow: ad_navigation

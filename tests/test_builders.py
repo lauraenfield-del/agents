@@ -12,7 +12,7 @@ from builders.build_agent import (
     load_registered_packages,
 )
 from builders.generate_package import generate_package
-from builders.register_package import register_package
+from builders.register_package import register_package, register_repository_package
 from builders.validate_package import load_package_manifest, validate_package
 from core.runtime.agent import AgentRuntime
 from core.tools.manager import ToolManager
@@ -40,11 +40,32 @@ def test_register_package_updates_registry(tmp_path):
     assert "coding" in registry
 
 
+def test_register_repository_package_updates_registry(tmp_path):
+    registry_path = tmp_path / "package_index.json"
+
+    entry = register_repository_package(
+        "ad_clicker",
+        packages_root=PACKAGES_DIR,
+        registry_path=registry_path,
+    )
+
+    assert entry["name"] == "Ad Clicker Agent"
+    with registry_path.open("r", encoding="utf-8") as registry_file:
+        registry = json.load(registry_file)
+    assert "ad_clicker" in registry
+
+
 def test_build_agent_creates_runtime_with_known_tools():
     runtime = build_agent(PACKAGES_DIR / "autonomous")
 
     assert isinstance(runtime, AgentRuntime)
     assert "filesystem" in runtime.tool_manager.list_tools()
+
+
+def test_build_agent_registers_mobile_automation_tool():
+    runtime = build_agent(PACKAGES_DIR / "ad_clicker")
+
+    assert "mobile_automation" in runtime.tool_manager.list_tools()
 
 
 def test_build_personal_assistant_registers_integration_tools():

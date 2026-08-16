@@ -16,6 +16,7 @@ from core.runtime.personal_assistant import PersonalAssistantAgent
 from core.tools.canva import CanvaTool
 from core.tools.filesystem import FileSystemTool
 from core.tools.manager import ToolManager
+from core.tools.mobile import MobileAutomationTool
 from core.tools.sendblue import SendblueTool
 from core.tools.shopify import ShopifyTool
 from core.tools.search import WebSearchTool
@@ -74,6 +75,7 @@ _TOOL_REGISTRY: dict[str, type[Tool]] = {
     "sendblue": SendblueTool,
     "shopify": ShopifyTool,
     "canva": CanvaTool,
+    "mobile_automation": MobileAutomationTool,
     # "browser" is an alias for web_fetch for manifest compatibility
     "browser": WebFetchTool,
 }

@@ -13,7 +13,7 @@ The executable framework lives in `core/`, `builders/`, `packages/`, `registry/`
 agents/
 ├── builders/      Package validation, generation, registration, and runtime assembly
 ├── core/          Runtime, tools, models, memory, orchestration, and validation code
-├── packages/      Seven manifest-only agent packages
+├── packages/      Eight manifest-only agent packages
 ├── registry/      JSON package indexes
 ├── skills/        Standalone skill/reference content; not loaded by build_agent()
 ├── tests/         Pytest suite
@@ -39,7 +39,7 @@ agents/
 - `model/` for mock, OpenAI, and Anthropic adapters plus provider selection
 - `orchestration/` for workflow coordination
 - `runtime/` for `AgentRuntime` and `ConversationalAgent`
-- `tools/` for filesystem, terminal, `web_fetch`/`web_search` (plus `browser` alias), sequential thinking (`think`), and integration tools for Sendblue, Shopify, and Canva.
+- `tools/` for filesystem, terminal, mobile automation, `web_fetch`/`web_search` (plus `browser` alias), sequential thinking (`think`), and integration tools for Sendblue, Shopify, and Canva.
 - `validation/` for schema and manifest validation
 
 `AgentRuntime.start()` publishes:
@@ -51,7 +51,7 @@ agents/
 
 ### Packaged agents
 
-The repo currently ships these seven packages:
+The repo currently ships these eight packages:
 
 | Package | Description |
 |---|---|
@@ -62,6 +62,7 @@ The repo currently ships these seven packages:
 | `social_media` | Social media workflow agent |
 | `customer_support` | Customer support agent |
 | `personal_assistant` | Approval-aware personal operations agent with Sendblue/Shopify/Canva tool wiring |
+| `ad_clicker` | Mobile ad-navigation agent with Appium-backed tap/scroll/find interactions |
 
 Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 
