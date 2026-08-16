@@ -33,6 +33,14 @@ class TimeoutDriver:
         return FakeElement()
 
 
+class FindFailDriver:
+    def tap(self, _points):
+        return None
+
+    def find_element(self, _by, _value):
+        raise ElementNotFound("ElementNotFound")
+
+
 class BranchDriver:
     def __init__(self, success_after_finds: int | None) -> None:
         self.success_after_finds = success_after_finds
@@ -96,11 +104,11 @@ def test_mobile_timeout_is_reported_as_error():
 
 
 def test_performance_metrics_logging_tracks_success_failure_and_errors():
-    driver = TapFailDriver(fail_count=1)
+    driver = FindFailDriver()
     tool = MobileAutomationTool(driver=driver)
     tool.start_performance_run()
 
-    tap_result = tool.run({"action": "tap", "x": 1, "y": 2, "retries": 2})
+    tap_result = tool.run({"action": "tap", "x": 1, "y": 2, "retries": 1})
     assert tap_result["status"] == "ok"
 
     find_result = tool.run(
@@ -117,7 +125,7 @@ def test_performance_metrics_logging_tracks_success_failure_and_errors():
     assert report["success_count"] == 1
     assert report["failure_count"] == 1
     assert report["avg_latency"] >= 0
-    assert report["error_types"]["AttributeError"] == 1
+    assert report["error_types"]["ElementNotFound"] == 1
     assert isinstance(report["json"], str)
 
 

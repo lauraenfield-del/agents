@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import concurrent.futures
 import json
+import threading
 import time
 from typing import Any
 
@@ -20,7 +20,6 @@ class MobileAutomationTool(Tool):
     ) -> None:
         self._driver = driver
         self.performance_logger = performance_logger or PerformanceLogger()
-        self.performance_logger.start_run()
         self._logger = get_logger(self.__class__.__name__)
 
     @property
@@ -157,7 +156,7 @@ class MobileAutomationTool(Tool):
                 result = self._run_with_timeout(action_func, timeout_seconds)
                 latency = time.perf_counter() - started_at
                 total_latency += latency
-                self.performance_logger.log_action(action=action, status="success", latency=total_latency)
+                self.performance_logger.log_action(action=action, status="success", latency=latency)
                 if isinstance(result, dict):
                     result.setdefault("action", action)
                     result["attempts"] = attempt
@@ -196,12 +195,23 @@ class MobileAutomationTool(Tool):
 
     @staticmethod
     def _run_with_timeout(action_func: Any, timeout_seconds: float) -> Any:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(action_func)
+        result_holder: dict[str, Any] = {}
+        error_holder: dict[str, Exception] = {}
+
+        def _target() -> None:
             try:
-                return future.result(timeout=timeout_seconds)
-            except concurrent.futures.TimeoutError as exc:
-                raise TimeoutError(f"Action timed out after {timeout_seconds} seconds.") from exc
+                result_holder["result"] = action_func()
+            except Exception as exc:  # noqa: BLE001
+                error_holder["error"] = exc
+
+        worker = threading.Thread(target=_target, daemon=True)
+        worker.start()
+        worker.join(timeout_seconds)
+        if worker.is_alive():
+            raise TimeoutError(f"Action timed out after {timeout_seconds} seconds.")
+        if "error" in error_holder:
+            raise error_holder["error"]
+        return result_holder.get("result")
 
     def _tap(self, x: int, y: int) -> dict[str, Any]:
         if hasattr(self._driver, "tap"):
