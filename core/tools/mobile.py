@@ -77,8 +77,8 @@ class MobileAutomationTool(Tool):
         y: int | None = None,
         left: int = 0,
         top: int = 0,
-        width: int = 1000,
-        height: int = 1800,
+        width: int | None = None,
+        height: int | None = None,
         direction: str = "down",
         percent: float = 0.6,
         by: str | None = None,
@@ -116,19 +116,24 @@ class MobileAutomationTool(Tool):
         self,
         left: int,
         top: int,
-        width: int,
-        height: int,
+        width: int | None,
+        height: int | None,
         direction: str,
         percent: float,
     ) -> dict[str, Any]:
         try:
+            viewport = self._driver.get_window_size() if hasattr(self._driver, "get_window_size") else {}
+            viewport_width = int(viewport.get("width", 1080))
+            viewport_height = int(viewport.get("height", 1920))
+            scroll_width = width if width is not None else viewport_width
+            scroll_height = height if height is not None else viewport_height
             self._driver.execute_script(
                 "mobile: scrollGesture",
                 {
                     "left": left,
                     "top": top,
-                    "width": width,
-                    "height": height,
+                    "width": scroll_width,
+                    "height": scroll_height,
                     "direction": direction,
                     "percent": percent,
                 },
