@@ -156,7 +156,7 @@ class MobileAutomationTool(Tool):
                 result = self._run_with_timeout(action_func, timeout_seconds)
                 latency = time.perf_counter() - started_at
                 total_latency += latency
-                self.performance_logger.log_action(action=action, status="success", latency=latency)
+                self.performance_logger.log_action(action=action, status="success", latency=total_latency)
                 if isinstance(result, dict):
                     result.setdefault("action", action)
                     result["attempts"] = attempt

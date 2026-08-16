@@ -126,7 +126,9 @@ def test_performance_metrics_logging_tracks_success_failure_and_errors():
     assert report["failure_count"] == 1
     assert report["avg_latency"] >= 0
     assert report["error_types"]["ElementNotFound"] == 1
-    assert isinstance(report["json"], str)
+    assert report["total_actions"] == 2
+    assert "ElementNotFound" in report["error_types"]
+    json.dumps(report)
 
 
 def test_ad_navigation_workflow_success_branch():

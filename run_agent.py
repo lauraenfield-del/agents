@@ -13,6 +13,7 @@ Examples
     python run_agent.py research "What is quantum computing?"
 """
 import sys
+import json
 from pathlib import Path
 
 from builders.build_agent import build_agent
@@ -111,7 +112,7 @@ if __name__ == "__main__":
         if package_name == "ad_clicker" and "ad_navigation" in user_input.lower():
             result = run_ad_navigation_workflow(runtime)
             print(f"{agent_name}: {result['status']}")
-            print(f"Performance summary: {result.get('performance', {}).get('json', '{}')}")
+            print(f"Performance summary: {json.dumps(result.get('performance', {}), sort_keys=True)}")
             sys.exit(0 if result["status"] == "success" else 1)
         if isinstance(runtime.agent, ConversationalAgent):
             reply = runtime.agent.chat(user_input)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 from collections import Counter
 from typing import Any
@@ -51,5 +50,4 @@ class PerformanceLogger:
             "total_actions": total_actions,
             "run_duration": duration,
         }
-        report["json"] = json.dumps(report, sort_keys=True)
         return report
