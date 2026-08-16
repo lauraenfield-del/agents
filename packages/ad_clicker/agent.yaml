@@ -8,5 +8,41 @@ workflows:
   - ad_navigation
 knowledge:
   - mobile_ad_navigation
+ad_navigation_workflow:
+  - step: launch_app
+    action: launch
+  - step: detect_ad
+    action: find_element
+    args:
+      by: accessibility id
+      value: ad_banner
+    on_success: tap_ad
+    on_failure: scroll_and_retry
+  - step: tap_ad
+    action: tap
+    args:
+      x: 100
+      y: 200
+    on_success: log_success
+    on_failure: graceful_exit
+  - step: scroll_and_retry
+    action: scroll
+    args:
+      direction: down
+    retry_find:
+      action: find_element
+      args:
+        by: accessibility id
+        value: ad_banner
+      max_retries: 3
+      on_success: tap_ad
+      on_failure: graceful_exit
+  - step: log_success
+    action: log
+    status: success
+  - step: graceful_exit
+    action: log
+    status: failed
+    terminate: true
 entrypoint:
   workflow: ad_navigation

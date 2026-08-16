@@ -66,6 +66,23 @@ The repo currently ships these eight packages:
 
 Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 
+`mobile_automation` behavior highlights:
+
+- accepts both JSON-string and dict payloads in `run()`
+- retries failed Appium actions (default: 3 attempts)
+- enforces per-action timeouts (default: 5 seconds)
+- emits structured failure logs such as `{"action":"tap","status":"failed","error":"ElementNotFound"}`
+- records per-action performance metrics (success/failure counts, average latency, error types) and returns a structured JSON run report
+
+`ad_clicker` `ad_navigation` workflow depth/branching:
+
+1. launch app
+2. try `find_element("ad_banner")`
+3. if found, tap and log success
+4. if not found, scroll down and retry find up to 3 times
+5. if still not found, log failure and exit gracefully
+6. continue to success-only path when ad detection/tap succeeds
+
 Tool entries may be either:
 
 - a built-in tool name such as `filesystem`

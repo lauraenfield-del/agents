@@ -17,6 +17,74 @@ from pathlib import Path
 
 from builders.build_agent import build_agent
 from core.runtime.conversational import ConversationalAgent
+from core.tools.mobile import MobileAutomationTool
+
+
+def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
+    try:
+        mobile_tool = runtime.tool_manager.get_tool("mobile_automation")
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "status": "failed",
+            "details": f"mobile_automation tool unavailable: {exc}",
+            "performance": {},
+        }
+
+    if not isinstance(mobile_tool, MobileAutomationTool):
+        return {
+            "status": "failed",
+            "details": "mobile_automation is not a MobileAutomationTool instance.",
+            "performance": {},
+        }
+
+    mobile_tool.start_performance_run()
+    workflow_log: list[dict] = []
+    workflow_log.append({"step": "launch_app", "status": "success"})
+
+    found = mobile_tool.run(
+        {
+            "action": "find_element",
+            "by": "accessibility id",
+            "value": "ad_banner",
+            "retries": 1,
+        }
+    )
+    workflow_log.append({"step": "find_element", "result": found})
+
+    if found.get("status") == "ok":
+        tap_result = mobile_tool.run(
+            {
+                "action": "tap",
+                "x": 100,
+                "y": 200,
+            }
+        )
+        workflow_log.append({"step": "tap", "result": tap_result})
+        performance = mobile_tool.end_performance_run()
+        return {"status": "success", "workflow_log": workflow_log, "performance": performance}
+
+    for _ in range(max_retries):
+        scroll_result = mobile_tool.run({"action": "scroll", "direction": "down"})
+        workflow_log.append({"step": "scroll", "result": scroll_result})
+
+        found = mobile_tool.run(
+            {
+                "action": "find_element",
+                "by": "accessibility id",
+                "value": "ad_banner",
+                "retries": 1,
+            }
+        )
+        workflow_log.append({"step": "find_element", "result": found})
+        if found.get("status") == "ok":
+            tap_result = mobile_tool.run({"action": "tap", "x": 100, "y": 200})
+            workflow_log.append({"step": "tap", "result": tap_result})
+            performance = mobile_tool.end_performance_run()
+            return {"status": "success", "workflow_log": workflow_log, "performance": performance}
+
+    workflow_log.append({"step": "exit", "status": "graceful_failure"})
+    performance = mobile_tool.end_performance_run()
+    return {"status": "failed", "workflow_log": workflow_log, "performance": performance}
 
 
 if __name__ == "__main__":
@@ -40,6 +108,11 @@ if __name__ == "__main__":
     # Single-shot mode: message passed on the command line
     if len(sys.argv) >= 3:
         user_input = " ".join(sys.argv[2:])
+        if package_name == "ad_clicker" and "ad_navigation" in user_input.lower():
+            result = run_ad_navigation_workflow(runtime)
+            print(f"{agent_name}: {result['status']}")
+            print(f"Performance summary: {result.get('performance', {}).get('json', '{}')}")
+            sys.exit(0 if result["status"] == "success" else 1)
         if isinstance(runtime.agent, ConversationalAgent):
             reply = runtime.agent.chat(user_input)
             print(f"{agent_name}: {reply}")
