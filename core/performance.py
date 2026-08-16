@@ -14,6 +14,7 @@ class PerformanceLogger:
         self._latencies: list[float] = []
         self._success_count = 0
         self._failure_count = 0
+        self._action_counts: Counter[str] = Counter()
         self._error_types: Counter[str] = Counter()
 
     def start_run(self) -> None:
@@ -21,9 +22,11 @@ class PerformanceLogger:
         self._latencies = []
         self._success_count = 0
         self._failure_count = 0
+        self._action_counts = Counter()
         self._error_types = Counter()
 
     def log_action(self, action: str, status: str, latency: float, error: str | None = None) -> None:
+        self._action_counts[action] += 1
         self._latencies.append(max(0.0, float(latency)))
         if status == "success":
             self._success_count += 1
@@ -43,6 +46,7 @@ class PerformanceLogger:
             "success_count": self._success_count,
             "failure_count": self._failure_count,
             "avg_latency": avg_latency,
+            "action_counts": dict(self._action_counts),
             "error_types": dict(self._error_types),
             "total_actions": total_actions,
             "run_duration": duration,

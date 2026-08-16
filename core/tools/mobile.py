@@ -178,7 +178,8 @@ class MobileAutomationTool(Tool):
                     )
                 )
 
-        assert last_error is not None
+        if last_error is None:
+            raise RuntimeError("mobile action failed without captured exception")
         self.performance_logger.log_action(
             action=action,
             status="failed",
