@@ -41,7 +41,12 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
     mobile_tool.start_performance_run()
     per_find_retries = 1
     workflow_log: list[dict] = []
-    workflow_log.append({"step": "launch_app", "status": "success"})
+    launch_result = mobile_tool.run({"action": "launch"})
+    workflow_log.append({"step": "launch_app", "result": launch_result})
+    if launch_result.get("status") != "ok":
+        workflow_log.append({"step": "exit", "status": "graceful_failure"})
+        performance = mobile_tool.end_performance_run()
+        return {"status": "failed", "workflow_log": workflow_log, "performance": performance}
 
     found = mobile_tool.run(
         {
@@ -63,6 +68,8 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
         )
         workflow_log.append({"step": "tap", "result": tap_result})
         performance = mobile_tool.end_performance_run()
+        if tap_result.get("status") != "ok":
+            return {"status": "failed", "workflow_log": workflow_log, "performance": performance}
         return {"status": "success", "workflow_log": workflow_log, "performance": performance}
 
     for _ in range(max_retries):
@@ -82,6 +89,8 @@ def run_ad_navigation_workflow(runtime, max_retries: int = 3) -> dict:
             tap_result = mobile_tool.run({"action": "tap", "x": 100, "y": 200})
             workflow_log.append({"step": "tap", "result": tap_result})
             performance = mobile_tool.end_performance_run()
+            if tap_result.get("status") != "ok":
+                return {"status": "failed", "workflow_log": workflow_log, "performance": performance}
             return {"status": "success", "workflow_log": workflow_log, "performance": performance}
 
     workflow_log.append({"step": "exit", "status": "graceful_failure"})

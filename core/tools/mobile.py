@@ -35,7 +35,7 @@ class MobileAutomationTool(Tool):
         return {
             "type": "object",
             "properties": {
-                "action": {"type": "string", "enum": ["tap", "scroll", "find_element"]},
+                "action": {"type": "string", "enum": ["launch", "tap", "scroll", "find_element"]},
                 "x": {"type": "integer"},
                 "y": {"type": "integer"},
                 "left": {"type": "integer"},
@@ -59,6 +59,8 @@ class MobileAutomationTool(Tool):
                 command = json.loads(payload)
             except json.JSONDecodeError as exc:
                 return {"status": "error", "details": f"Invalid JSON payload: {exc}"}
+            if not isinstance(command, dict):
+                return {"status": "error", "details": "Payload must be a JSON string or object."}
         elif isinstance(payload, dict):
             command = payload
         else:
@@ -72,8 +74,8 @@ class MobileAutomationTool(Tool):
             action=action,
             x=command.get("x"),
             y=command.get("y"),
-            left=command.get("left"),
-            top=command.get("top"),
+            left=command.get("left", 0),
+            top=command.get("top", 0),
             width=command.get("width"),
             height=command.get("height"),
             direction=command.get("direction", "down"),
@@ -102,6 +104,14 @@ class MobileAutomationTool(Tool):
     ) -> dict[str, Any]:
         if self._driver is None:
             return {"status": "error", "details": "No Appium driver attached to mobile_automation."}
+
+        if action == "launch":
+            return self._execute_with_retries(
+                action="launch",
+                action_func=lambda: self._launch(),
+                retries=retries,
+                timeout_seconds=timeout_seconds,
+            )
 
         if action == "tap":
             if x is None or y is None:
@@ -216,6 +226,13 @@ class MobileAutomationTool(Tool):
         if "error" in error_holder:
             raise error_holder["error"]
         return result_holder.get("result")
+
+    def _launch(self) -> dict[str, Any]:
+        if hasattr(self._driver, "launch_app"):
+            self._driver.launch_app()
+        else:
+            self._driver.execute_script("mobile: launchApp")
+        return {"status": "ok", "action": "launch"}
 
     def _tap(self, x: int, y: int) -> dict[str, Any]:
         if hasattr(self._driver, "tap"):

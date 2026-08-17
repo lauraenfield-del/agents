@@ -47,6 +47,10 @@ class BranchDriver:
         self.find_calls = 0
         self.scroll_calls = 0
         self.tap_calls = 0
+        self.launch_calls = 0
+
+    def launch_app(self):
+        self.launch_calls += 1
 
     def get_window_size(self):
         return {"width": 300, "height": 600}
