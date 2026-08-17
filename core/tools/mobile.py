@@ -160,8 +160,10 @@ class MobileAutomationTool(Tool):
         max_retries = max(1, int(retries))
         total_latency = 0.0
         last_latency = 0.0
+        attempts_made = 0
 
         for attempt in range(1, max_retries + 1):
+            attempts_made = attempt
             started_at = time.perf_counter()
             try:
                 result = self._run_with_timeout(action_func, timeout_seconds)
@@ -190,6 +192,8 @@ class MobileAutomationTool(Tool):
                         sort_keys=True,
                     )
                 )
+                if isinstance(exc, TimeoutError):
+                    break
 
         if last_error is None:
             last_error = RuntimeError("mobile action failed without captured exception")
@@ -204,7 +208,7 @@ class MobileAutomationTool(Tool):
             "action": action,
             "error": last_error.__class__.__name__,
             "details": str(last_error),
-            "attempts": max_retries,
+            "attempts": attempts_made,
         }
 
     @staticmethod
@@ -222,6 +226,7 @@ class MobileAutomationTool(Tool):
         worker.start()
         worker.join(timeout_seconds)
         if worker.is_alive():
+            worker.join()
             raise TimeoutError(f"Action timed out after {timeout_seconds} seconds.")
         if "error" in error_holder:
             raise error_holder["error"]
