@@ -1,4 +1,11 @@
 {
+  "ad_clicker": {
+    "description": "Agent that navigates a mobile app, finds ad elements, taps them, logs actions, and repeats.",
+    "entrypoint": "ad_navigation",
+    "name": "Ad Clicker Agent",
+    "path": "packages/ad_clicker",
+    "version": "1.0.0"
+  },
   "autonomous": {
     "description": "Long-running autonomous task execution agent capable of planning, acting, and reviewing multi-step tasks.",
     "entrypoint": "autonomous_controller",

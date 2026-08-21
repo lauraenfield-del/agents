@@ -35,3 +35,12 @@ def register_package(
         json.dump(registry, registry_file, indent=2, sort_keys=True)
 
     return registry[package_dir.name]
+
+
+def register_repository_package(
+    package_name: str,
+    packages_root: str | Path = Path("packages"),
+    registry_path: str | Path = Path("registry") / "package_index.json",
+) -> dict:
+    package_dir = Path(packages_root) / package_name
+    return register_package(package_dir=package_dir, registry_path=registry_path)

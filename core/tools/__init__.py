@@ -1,6 +1,7 @@
 from core.tools.canva import CanvaTool
 from core.tools.communication import CommunicationTool
 from core.tools.filesystem import FileSystemTool
+from core.tools.mobile import MobileAutomationTool
 from core.tools.search import WebSearchTool
 from core.tools.sequential_thinking import SequentialThinkingTool
 from core.tools.sendblue import SendblueTool
@@ -13,6 +14,7 @@ __all__ = [
     "CommunicationTool",
     "CanvaTool",
     "FileSystemTool",
+    "MobileAutomationTool",
     "SequentialThinkingTool",
     "SendblueTool",
     "ShopifyTool",

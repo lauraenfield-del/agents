@@ -16,6 +16,7 @@ from core.runtime.personal_assistant import PersonalAssistantAgent
 from core.tools.canva import CanvaTool
 from core.tools.filesystem import FileSystemTool
 from core.tools.manager import ToolManager
+from core.tools.mobile import MobileAutomationTool
 from core.tools.sendblue import SendblueTool
 from core.tools.shopify import ShopifyTool
 from core.tools.search import WebSearchTool
@@ -74,6 +75,7 @@ _TOOL_REGISTRY: dict[str, type[Tool]] = {
     "sendblue": SendblueTool,
     "shopify": ShopifyTool,
     "canva": CanvaTool,
+    "mobile_automation": MobileAutomationTool,
     # "browser" is an alias for web_fetch for manifest compatibility
     "browser": WebFetchTool,
 }
@@ -119,6 +121,32 @@ def _search_github_for_tool(tool_name: str, max_results: int = 3) -> list[dict[s
         return []
 
 
+def _make_mobile_tool() -> MobileAutomationTool:
+    """Create a :class:`MobileAutomationTool` with an Appium driver when available.
+
+    The driver is configured from the ``APPIUM_SERVER_URL`` and
+    ``APPIUM_DESIRED_CAPS`` environment variables.  When those are absent the
+    tool is created without a driver so that the framework remains usable for
+    local testing; callers can attach a driver later via ``tool._driver``.
+    """
+    server_url = os.getenv("APPIUM_SERVER_URL", "").strip()
+    caps_json = os.getenv("APPIUM_DESIRED_CAPS", "").strip()
+    driver = None
+    if server_url and caps_json:
+        try:
+            caps = json.loads(caps_json)
+            from appium import webdriver as appium_webdriver  # type: ignore[import]
+            driver = appium_webdriver.Remote(server_url, caps)
+        except Exception as exc:  # noqa: BLE001
+            warnings.warn(
+                f"Could not create Appium driver from environment: {exc}. "
+                "MobileAutomationTool will have no driver attached.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+    return MobileAutomationTool(driver=driver)
+
+
 def _register_known_tools(tool_manager: ToolManager, tool_names: list[str | dict]) -> None:
     registered: set[str] = set()
     for raw_tool in tool_names:
@@ -131,7 +159,10 @@ def _register_known_tools(tool_manager: ToolManager, tool_names: list[str | dict
 
         tool_cls = _load_tool_class(import_path) if import_path else _TOOL_REGISTRY.get(tool_name)
         if tool_cls is not None:
-            instance = tool_cls()
+            if tool_cls is MobileAutomationTool:
+                instance = _make_mobile_tool()
+            else:
+                instance = tool_cls()
             # Avoid registering duplicate canonical names
             if instance.name not in registered:
                 tool_manager.register_tool(instance)

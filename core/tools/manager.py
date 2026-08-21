@@ -27,3 +27,8 @@ class ToolManager:
         if name not in self._tools:
             raise ValueError(f"Tool '{name}' not found.")
         return self._tools[name].schema
+
+    def get_tool(self, name: str) -> Tool:
+        if name not in self._tools:
+            raise ValueError(f"Tool '{name}' not found.")
+        return self._tools[name]
