@@ -51,7 +51,7 @@ agents/
 
 ### Packaged agents
 
-The repo currently ships these eight packages:
+The repo currently ships these nine packages:
 
 | Package | Description |
 |---|---|
@@ -63,6 +63,7 @@ The repo currently ships these eight packages:
 | `customer_support` | Customer support agent |
 | `personal_assistant` | Approval-aware personal operations agent with Sendblue/Shopify/Canva tool wiring |
 | `ad_clicker` | Mobile ad-navigation agent with Appium-backed tap/scroll/find interactions |
+| `enfieldai` | Unified, user-friendly orchestration agent that brings together existing runtime capabilities in one package |
 
 Each package is defined by `packages/<name>/agent.yaml`. The manifests declare metadata, tools, workflows, knowledge labels, and an entrypoint workflow name.
 

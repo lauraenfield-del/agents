@@ -22,12 +22,15 @@ The runtime currently includes implementations for:
 
 ## Registered packages
 
-The repository currently includes six registered packages:
+The repository currently includes nine registered packages:
 
 - autonomous
 - coding
 - customer_support
+- ad_clicker
+- enfieldai
 - marketing
+- personal_assistant
 - research
 - social_media
 

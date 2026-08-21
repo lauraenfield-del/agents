@@ -1,4 +1,11 @@
 {
+  "ad_clicker": {
+    "name": "Ad Clicker Agent",
+    "description": "Agent that navigates a mobile app, finds ad elements, taps them, logs actions, and repeats.",
+    "package": "packages/ad_clicker",
+    "tools": ["mobile_automation", "think"],
+    "version": "1.0.0"
+  },
   "autonomous": {
     "name": "Autonomous Agent",
     "description": "Long-running autonomous task execution agent capable of planning, acting, and reviewing multi-step tasks.",
@@ -20,11 +27,25 @@
     "tools": ["filesystem", "web_fetch", "web_search", "think"],
     "version": "1.0.0"
   },
+  "enfieldai": {
+    "name": "EnfieldAI Agent",
+    "description": "Unified, user-friendly orchestration layer that brings together existing agents runtime capabilities in a single interface-oriented package.",
+    "package": "packages/enfieldai",
+    "tools": ["filesystem", "terminal", "web_fetch", "web_search", "think", "sendblue", "shopify", "canva", "mobile_automation"],
+    "version": "1.0.0"
+  },
   "marketing": {
     "name": "Marketing Agent",
     "description": "Agent for marketing campaign planning, lead generation, and performance analysis.",
     "package": "packages/marketing",
     "tools": ["filesystem", "web_fetch", "web_search", "think"],
+    "version": "1.0.0"
+  },
+  "personal_assistant": {
+    "name": "Personal Assistant Agent",
+    "description": "End-to-end personal operations assistant for passive-income workflows with approval-aware execution and secure credential references.",
+    "package": "packages/personal_assistant",
+    "tools": ["filesystem", "terminal", "web_fetch", "web_search", "think", "sendblue", "shopify", "canva"],
     "version": "1.0.0"
   },
   "research": {

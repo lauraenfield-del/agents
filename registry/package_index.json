@@ -27,11 +27,11 @@
     "path": "packages/customer_support",
     "version": "1.0.0"
   },
-  "personal_assistant": {
-    "description": "End-to-end personal operations assistant for passive-income workflows with approval-aware execution and secure credential references.",
-    "entrypoint": "personal_assistant_controller",
-    "name": "Personal Assistant Agent",
-    "path": "packages/personal_assistant",
+  "enfieldai": {
+    "description": "Unified, user-friendly orchestration layer that brings together existing agents runtime capabilities in a single interface-oriented package.",
+    "entrypoint": "enfieldai_controller",
+    "name": "EnfieldAI Agent",
+    "path": "packages/enfieldai",
     "version": "1.0.0"
   },
   "marketing": {
@@ -39,6 +39,13 @@
     "entrypoint": "marketing_controller",
     "name": "Marketing Agent",
     "path": "packages/marketing",
+    "version": "1.0.0"
+  },
+  "personal_assistant": {
+    "description": "End-to-end personal operations assistant for passive-income workflows with approval-aware execution and secure credential references.",
+    "entrypoint": "personal_assistant_controller",
+    "name": "Personal Assistant Agent",
+    "path": "packages/personal_assistant",
     "version": "1.0.0"
   },
   "research": {

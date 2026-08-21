@@ -88,8 +88,10 @@ The runtime path implemented today is:
 The repository currently includes these packages:
 
 - autonomous
+- ad_clicker
 - coding
 - customer_support
+- enfieldai
 - personal_assistant
 - marketing
 - research

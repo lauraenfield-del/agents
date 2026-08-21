@@ -1,0 +1,28 @@
+name: EnfieldAI Agent
+version: 1.0.0
+inherits: core
+description: >
+  Unified, user-friendly orchestration agent that surfaces the existing agents
+  repository capabilities in one place while keeping core runtime behavior and
+  tool semantics unchanged.
+tools:
+  - filesystem
+  - terminal
+  - web_fetch
+  - web_search
+  - think
+  - sendblue
+  - shopify
+  - canva
+  - mobile_automation
+workflows:
+  - onboarding
+  - guided_task_execution
+  - visual_reporting
+  - operations
+knowledge:
+  - platform_capabilities
+  - user_guidance
+  - workflow_orchestration
+entrypoint:
+  workflow: enfieldai_controller

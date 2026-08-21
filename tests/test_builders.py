@@ -75,6 +75,22 @@ def test_build_personal_assistant_registers_integration_tools():
     assert runtime.agent.__class__.__name__ == "ManifestPersonalAssistantAgent"
 
 
+def test_build_enfieldai_registers_unified_toolset():
+    runtime = build_agent(PACKAGES_DIR / "enfieldai")
+    names = set(runtime.tool_manager.list_tools())
+    assert {
+        "filesystem",
+        "terminal",
+        "web_fetch",
+        "web_search",
+        "think",
+        "sendblue",
+        "shopify",
+        "canva",
+        "mobile_automation",
+    }.issubset(names)
+
+
 def test_build_agent_registers_manifest_import_tool_without_registry_edit(tmp_path):
     package_dir = tmp_path / "imported_tool_agent"
     manifest = {
@@ -167,6 +183,12 @@ def test_validate_package_rejects_tool_mapping_without_name(tmp_path):
 
 def test_load_registered_packages_missing_registry(tmp_path):
     assert load_registered_packages(tmp_path / "missing.json") == {}
+
+
+def test_repository_registry_includes_enfieldai_package():
+    registry = load_registered_packages(PACKAGES_DIR.parent / "registry" / "package_index.json")
+    assert registry["enfieldai"]["path"] == "packages/enfieldai"
+    assert registry["enfieldai"]["entrypoint"] == "enfieldai_controller"
 
 
 # ---------------------------------------------------------------------------
