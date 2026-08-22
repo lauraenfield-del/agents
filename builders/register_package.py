@@ -11,7 +11,7 @@ def main():
 
     loader = get_package_loader()
     package_names = [args.package] if args.package else loader.discover_packages()
-    entries = {}
+entries = loader.list_registry_entries()["agents"]
 
     for package_name in package_names:
         manifest = loader.load_package(package_name)
