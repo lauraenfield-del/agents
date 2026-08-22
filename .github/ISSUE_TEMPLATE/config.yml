@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  # This URL is repository-specific; update it if this template is reused in another repository.
+  - name: Security issue reporting
+    about: Do not file vulnerabilities publicly. Follow the repository security policy instead.
+    url: https://github.com/lauraenfield-del/agents/security/policy

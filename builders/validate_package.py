@@ -1,24 +1,64 @@
-import argparse
-import json
+from pathlib import Path
 
-from builders.common import get_package_loader
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Validate agent package manifests.")
-    parser.add_argument("package", nargs="?", help="Optional package name to validate.")
-    args = parser.parse_args()
-
-    loader = get_package_loader()
-    package_names = [args.package] if args.package else loader.discover_packages()
-
-    results = {}
-    for package_name in package_names:
-        loader.load_package(package_name)
-        results[package_name] = "valid"
-
-    print(json.dumps(results, indent=2))
+import yaml
 
 
-if __name__ == "__main__":
-    main()
+REQUIRED_KEYS = {
+    "name": str,
+    "version": str,
+    "inherits": str,
+    "description": str,
+    "tools": list,
+    "workflows": list,
+    "knowledge": list,
+    "entrypoint": dict,
+}
+
+
+def load_package_manifest(package_dir: str | Path) -> dict:
+    manifest_path = Path(package_dir) / "agent.yaml"
+    if not manifest_path.exists():
+        raise ValueError(f"Package manifest not found at expected path: {manifest_path}")
+    with manifest_path.open("r", encoding="utf-8") as manifest_file:
+        data = yaml.safe_load(manifest_file) or {}
+    if not isinstance(data, dict):
+        raise ValueError("Package manifest must deserialize to a mapping.")
+    return data
+
+
+def validate_package(package_dir: str | Path) -> dict:
+    manifest = load_package_manifest(package_dir)
+
+    for key, expected_type in REQUIRED_KEYS.items():
+        if key not in manifest:
+            raise ValueError(f"Package manifest missing required field: {key}")
+        if not isinstance(manifest[key], expected_type):
+            raise ValueError(
+                f"Package manifest field '{key}' must be of type {expected_type.__name__}"
+            )
+
+    workflow = manifest["entrypoint"].get("workflow")
+    if not isinstance(workflow, str) or not workflow:
+        raise ValueError("Package manifest entrypoint.workflow must be a non-empty string")
+
+    for i, item in enumerate(manifest["tools"]):
+        if isinstance(item, str):
+            continue
+        if not isinstance(item, dict):
+            raise ValueError(
+                f"Package manifest field 'tools[{i}]' must be a string or mapping, got {type(item).__name__}"
+            )
+        name = item.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"Package manifest field 'tools[{i}].name' must be a non-empty string")
+        if "import" in item and (not isinstance(item["import"], str) or not item["import"].strip()):
+            raise ValueError(f"Package manifest field 'tools[{i}].import' must be a non-empty string")
+
+    for list_field in ("workflows", "knowledge"):
+        for i, item in enumerate(manifest[list_field]):
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"Package manifest field '{list_field}[{i}]' must be a string, got {type(item).__name__}"
+                )
+
+    return manifest

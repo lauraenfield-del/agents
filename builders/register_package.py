@@ -1,35 +1,46 @@
-import argparse
 import json
+from pathlib import Path
 
-from builders.common import REGISTRY_DIRECTORY, get_package_loader
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Register validated packages in the registry.")
-    parser.add_argument("package", nargs="?", help="Optional package name to register.")
-    args = parser.parse_args()
-
-    loader = get_package_loader()
-    package_names = [args.package] if args.package else loader.discover_packages()
-entries = loader.list_registry_entries()["agents"]
-
-    for package_name in package_names:
-        manifest = loader.load_package(package_name)
-        entries[package_name] = {
-            "name": manifest["name"],
-            "version": manifest["version"],
-            "description": manifest["description"],
-            "entrypoint": manifest["entrypoint"]["workflow"],
-        }
-
-    agents_path = REGISTRY_DIRECTORY / "agents.json"
-    index_path = REGISTRY_DIRECTORY / "package_index.json"
-
-    agents_path.write_text(json.dumps(entries, indent=2), encoding="utf-8")
-    index_path.write_text(json.dumps({"packages": sorted(entries.keys())}, indent=2), encoding="utf-8")
-
-    print(json.dumps(entries, indent=2))
+from builders.validate_package import validate_package
 
 
-if __name__ == "__main__":
-    main()
+def register_package(
+    package_dir: str | Path,
+    registry_path: str | Path = Path("registry") / "package_index.json",
+) -> dict:
+    package_dir = Path(package_dir)
+    manifest = validate_package(package_dir)
+    registry_path = Path(registry_path)
+
+    if registry_path.exists():
+        with registry_path.open("r", encoding="utf-8") as registry_file:
+            registry = json.load(registry_file) or {}
+        if not isinstance(registry, dict):
+            raise ValueError(
+                f"Registry file at '{registry_path}' must contain a JSON object, not {type(registry).__name__}."
+            )
+    else:
+        registry = {}
+
+    registry[package_dir.name] = {
+        "name": manifest["name"],
+        "version": manifest["version"],
+        "description": manifest["description"],
+        "path": str(package_dir.as_posix()),
+        "entrypoint": manifest["entrypoint"]["workflow"],
+    }
+
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    with registry_path.open("w", encoding="utf-8") as registry_file:
+        json.dump(registry, registry_file, indent=2, sort_keys=True)
+
+    return registry[package_dir.name]
+
+
+def register_repository_package(
+    package_name: str,
+    packages_root: str | Path = Path("packages"),
+    registry_path: str | Path = Path("registry") / "package_index.json",
+) -> dict:
+    package_dir = Path(packages_root) / package_name
+    return register_package(package_dir=package_dir, registry_path=registry_path)

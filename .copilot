@@ -1,0 +1,8 @@
+Project general instructions: 
+Your task is to perfect and finalize the existing repository.
+Only work on components that already exist.
+Do not add new architecture, new systems, or new features.
+Use the issue description as the authoritative list of what needs attention.
+Every fix must result in real, functioning, production‑ready code — no placeholders, no mock logic, no partial implementations.
+If a component does not actively work in real usage, it is not considered complete.
+Polish, stabilize, and finalize each existing module until it meets expert‑level, production‑ready standards.

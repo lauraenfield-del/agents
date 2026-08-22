@@ -1,0 +1,156 @@
+name: Label triage
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  pull_request_target:
+    # Uses the base-repository token to apply labels; this workflow must not check out or execute PR code.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure standard labels exist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const standardLabels = [
+              { name: 'needs-triage', color: 'D4C5F9', description: 'Awaiting maintainer triage' },
+              { name: 'bug', color: 'D73A4A', description: 'Something is not working' },
+              { name: 'enhancement', color: 'A2EEEF', description: 'New feature or request' },
+              { name: 'discussion', color: 'C5DEF5', description: 'General discussion and collaboration' },
+              { name: 'documentation', color: '0075CA', description: 'Documentation improvements' },
+              { name: 'question', color: '7057FF', description: 'Further information is requested' },
+              { name: 'tests', color: 'BFDADC', description: 'Testing-related work' },
+              { name: 'dependencies', color: '0366D6', description: 'Dependency updates or maintenance' },
+              { name: 'github-actions', color: '5319E7', description: 'GitHub Actions or workflow changes' },
+              { name: 'core', color: 'FBCA04', description: 'Core runtime changes' },
+              { name: 'builders', color: 'C2E0C6', description: 'Builder and package assembly changes' },
+              { name: 'packages', color: '0E8A16', description: 'Agent package manifest changes' },
+              { name: 'skills', color: '1D76DB', description: 'Skill content changes' },
+              { name: 'registry', color: 'F9D0C4', description: 'Registry metadata changes' },
+            ];
+
+            const existingLabels = new Set();
+            const requiredLabels = new Set(standardLabels.map((label) => label.name.toLowerCase()));
+            for await (const response of github.paginate.iterator(
+              github.rest.issues.listLabelsForRepo,
+              { owner, repo, per_page: 100 }
+            )) {
+              for (const label of response.data) {
+                existingLabels.add(label.name.toLowerCase());
+              }
+              if ([...requiredLabels].every((label) => existingLabels.has(label))) break;
+            }
+
+            for (const label of standardLabels) {
+              if (!existingLabels.has(label.name.toLowerCase())) {
+                await github.rest.issues.createLabel({ owner, repo, ...label });
+              }
+            }
+
+  label-issue:
+    if: github.event_name == 'issues'
+    needs: sync-labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue = context.payload.issue;
+
+            const text = `${issue.title}\n${issue.body || ''}`.toLowerCase();
+            const labels = new Set(['needs-triage']);
+            const hasWord = (pattern) => pattern.test(text);
+
+            if (hasWord(/\[bug\]|\bbug\b|\berror\b|\btraceback\b|\bfailure\b/)) {
+              labels.add('bug');
+            }
+            if (hasWord(/\[feature\]|\bfeature\b|\benhancement\b|\bproposal\b/)) {
+              labels.add('enhancement');
+            }
+            if (hasWord(/\bdocs\b|\bdocumentation\b|\breadme\b/)) {
+              labels.add('documentation');
+            }
+            if (hasWord(/\bquestion\b|\bhow do i\b|\bhow to\b/)) {
+              labels.add('question');
+            }
+            if (hasWord(/\btest(?:s|ing)?\b|\bpytest\b/)) {
+              labels.add('tests');
+            }
+            if (hasWord(/\bdependency\b|\brequirements\.txt\b|\bpackage version\b/)) {
+              labels.add('dependencies');
+            }
+            if (hasWord(/\bworkflow\b|\bgithub actions\b|\.github\/workflows\//)) {
+              labels.add('github-actions');
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issue.number,
+              labels: Array.from(labels),
+            });
+
+  label-pr:
+    if: github.event_name == 'pull_request_target'
+    needs: sync-labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull = context.payload.pull_request;
+
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner, repo, pull_number: pull.number, per_page: 100 }
+            );
+
+            const labels = new Set(['needs-triage']);
+            for (const file of files) {
+              const name = file.filename;
+              const isGithubDocs =
+                name.startsWith('.github/ISSUE_TEMPLATE/') ||
+                name.startsWith('.github/DISCUSSION_TEMPLATE/') ||
+                name === '.github/pull_request_template.md' ||
+                name === '.github/CODEOWNERS';
+              if (name.startsWith('core/')) labels.add('core');
+              if (name.startsWith('builders/')) labels.add('builders');
+              if (name.startsWith('packages/')) labels.add('packages');
+              if (name.startsWith('skills/')) labels.add('skills');
+              if (name.startsWith('registry/')) labels.add('registry');
+              if (name.startsWith('.github/workflows/')) labels.add('github-actions');
+              if (name === 'requirements.txt') labels.add('dependencies');
+              if (name.startsWith('tests/')) labels.add('tests');
+              if (name.endsWith('.md') || isGithubDocs) labels.add('documentation');
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pull.number,
+              labels: Array.from(labels),
+            });

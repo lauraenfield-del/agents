@@ -1,51 +1,65 @@
 # Project Status
 
-## Overview
+This file is a current snapshot of what is actually present in the repository.
 
-This document tracks the status of the agent framework project.
+## Implemented runtime
 
-## Checklist
+- Core event bus, runtime, orchestration, validation, logging, memory, and tool infrastructure are present under `core/`
+- `ConversationalAgent` is implemented under `core/runtime/conversational.py`
+- Live provider adapters exist for OpenAI and Anthropic under `core/model/`
+- `build_agent()` validates a manifest, registers known tools, creates memory, and selects a model
 
-- [x] Initial directory structure created
-- [x] Placeholder files created
-- [x] Core interfaces implementation
-- [x] Event system implementation
-- [x] Logging system implementation
-- [x] Core runtime implementation
-- [x] Tool management system implementation
-- [x] Memory management system implementation
-- [x] Model integration implementation
-- [ ] Shared resource implementation
-- [x] Agent package manifest validation and registration tooling
-- [x] Agent package loading and runtime configuration composition
-- [ ] Full dynamic package execution and workflow engine
+## Implemented tools
 
-## Status Indicators
+The runtime currently includes implementations for:
 
-- **Core Runtime:** Partially Completed
-- **Shared Resources:** Not Started
-- **Agent Packages:** Partially Completed
+- filesystem
+- terminal
+- `web_fetch` (also available as `browser`)
+- `web_search`
+- `communication` (implemented, but not registered by `build_agent()` by default)
+- `think` (sequential thinking)
 
-## Test Evidence
+## Registered packages
 
-- **test_interfaces.py:** 3 passed
-- **test_events.py:** 4 passed
-- **test_logging.py:** 2 passed
-- **test_runtime.py:** 4 passed
-- **test_tools.py:** 6 passed
-- **test_memory.py:** 6 passed
-- **test_packages.py:** 5 passed
+The repository currently includes six registered packages:
 
-## Changelog
+- autonomous
+- coding
+- customer_support
+- marketing
+- research
+- social_media
 
-- **2026-08-04:** Initial project setup. Created directory structure and placeholder files based on `objective.md`.
-- **2026-08-04:** Implemented and tested the core interfaces.
-- **2026-08-04:** Implemented and tested the event system.
-- **2026-08-04:** Implemented and tested the logging system.
-- **2026-08-04:** Implemented and tested the core agent runtime.
-- **2026-08-04:** Implemented and tested the tool management system.
-- **2026-08-04:** Fixed a schema mismatch bug in the FileSystemTool.
-- **2026-08-04:** Implemented and tested the memory management system.
-- **2026-08-04:** Implemented and tested the model integration.
-- **2026-08-05:** Implemented package manifest loading, validation, registration, generation, and build utilities.
-- **2026-08-05:** Fixed the demo runtime wiring and corrected interface tests to satisfy abstract contracts.
+## CLI and demo entry points
+
+- `run_agent.py` launches a package by name
+- passing a message runs one turn and exits
+- omitting the message starts an interactive REPL
+- `demo.py` demonstrates runtime event subscriptions with a simple demo agent
+
+## Model configuration
+
+To use a live model:
+
+- install `openai` and set `OPENAI_API_KEY`, optionally `OPENAI_MODEL`
+- or install `anthropic` and set `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_MODEL`
+
+If neither key is configured, the runtime falls back to `MockModel` with a warning.
+
+## Test verification
+
+Verified on 2026-08-09 with:
+
+```bash
+python3 -m pytest -q
+```
+
+Result:
+
+- 62 passed
+- 1 expected warning about falling back to `MockModel` when no API key is configured
+
+## Repository note
+
+The repository also contains a versioned `skills/` directory. That content is currently separate from the Python runtime and is not loaded by `build_agent()` or `run_agent.py`.
