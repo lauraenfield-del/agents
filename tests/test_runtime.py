@@ -4,6 +4,8 @@ from core.runtime.agent import AgentRuntime
 from core.interfaces.agent import Agent, Memory, Model
 from core.events.bus import EventBus
 from core.tools.manager import ToolManager
+from core.memory.simple import SimpleMemory
+from core.model.mock import MockModel
 
 @pytest.fixture
 def mock_agent():
@@ -29,6 +31,17 @@ def mock_memory():
 @pytest.fixture
 def mock_model():
     return Mock(spec=Model)
+
+
+def test_runtime_accepts_real_dependencies(mock_agent):
+    runtime = AgentRuntime(
+        agent=mock_agent,
+        event_bus=EventBus(),
+        tool_manager=ToolManager(),
+        memory=SimpleMemory(),
+        model=MockModel(),
+    )
+    assert runtime.agent.tools is not None
 
 def test_runtime_initialization(mock_agent, mock_event_bus, mock_tool_manager, mock_memory, mock_model):
     runtime = AgentRuntime(
