@@ -33,7 +33,13 @@ class PackageLoader:
         )
 
     def load_package(self, package_name: str) -> Dict[str, Any]:
-        manifest_path = self.packages_directory / package_name / "agent.yaml"
+manifest_path = (self.packages_directory / package_name / "agent.yaml").resolve()
+        try:
+            manifest_path.relative_to(self.packages_directory.resolve())
+        except ValueError as error:
+            raise PackageValidationError(
+                f"Package '{package_name}' resolves outside the packages directory."
+            ) from error
         if not manifest_path.exists():
             raise FileNotFoundError(f"Package manifest not found: {manifest_path}")
         manifest = self._parse_simple_yaml(manifest_path)
