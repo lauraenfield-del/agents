@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
+import yaml
+
 
 class PackageValidationError(ValueError):
     pass
@@ -33,7 +35,7 @@ class PackageLoader:
         )
 
     def load_package(self, package_name: str) -> Dict[str, Any]:
-manifest_path = (self.packages_directory / package_name / "agent.yaml").resolve()
+        manifest_path = (self.packages_directory / package_name / "agent.yaml").resolve()
         try:
             manifest_path.relative_to(self.packages_directory.resolve())
         except ValueError as error:
@@ -42,7 +44,7 @@ manifest_path = (self.packages_directory / package_name / "agent.yaml").resolve(
             ) from error
         if not manifest_path.exists():
             raise FileNotFoundError(f"Package manifest not found: {manifest_path}")
-        manifest = self._parse_simple_yaml(manifest_path)
+        manifest = self._load_yaml_manifest(manifest_path)
         self.validate_manifest(manifest, package_name=package_name)
         return manifest
 
@@ -93,48 +95,14 @@ manifest_path = (self.packages_directory / package_name / "agent.yaml").resolve(
             content = file.read().strip()
         return json.loads(content) if content else {}
 
-    def _parse_simple_yaml(self, path: Path) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
-        current_list_key = None
-        current_dict_key = None
+    def _load_yaml_manifest(self, path: Path) -> Dict[str, Any]:
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                data = yaml.safe_load(file)
+        except yaml.YAMLError as error:
+            raise PackageValidationError(f"Invalid YAML in package manifest {path}: {error}") from error
 
-        with path.open("r", encoding="utf-8") as file:
-            for raw_line in file:
-                line = raw_line.rstrip()
-                if not line.strip():
-                    continue
+        if not isinstance(data, dict):
+            raise PackageValidationError(f"Package manifest {path} must contain a YAML mapping at the top level.")
 
-                stripped = line.strip()
-                if stripped.startswith("- "):
-                    if current_list_key is None:
-                        raise PackageValidationError(f"List item found before list key in {path}")
-                    result[current_list_key].append(stripped[2:].strip())
-                    continue
-
-                indent = len(line) - len(line.lstrip(" "))
-                if ":" not in stripped:
-                    raise PackageValidationError(f"Unsupported manifest line '{line}' in {path}")
-
-                key, value = stripped.split(":", 1)
-                value = value.strip()
-
-                if indent == 0 and value:
-                    current_list_key = None
-                    current_dict_key = None
-                    result[key] = value
-                elif indent == 0 and not value and key in ("tools", "workflows", "knowledge"):
-                    current_dict_key = None
-                    current_list_key = key
-                    result[key] = []
-                elif indent == 0 and not value:
-                    current_list_key = None
-                    result[key] = {}
-                    current_dict_key = key
-                elif indent == 2 and current_dict_key:
-                    result[current_dict_key][key] = value
-                else:
-                    raise PackageValidationError(f"Unsupported indentation structure in {path}: '{line}'")
-
-        for key in ("tools", "workflows", "knowledge"):
-            result.setdefault(key, [])
-        return result
+        return data
