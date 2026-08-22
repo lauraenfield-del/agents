@@ -26,7 +26,11 @@ def main():
     parser.add_argument("--description", default="Generated agent package.", help="Package description.")
     args = parser.parse_args()
 
-    package_dir = PACKAGES_DIRECTORY / args.package
+package_path = Path(args.package)
+    if package_path.is_absolute() or len(package_path.parts) != 1 or args.package in {".", ".."}:
+        parser.error("package must be a single relative directory name")
+
+    package_dir = PACKAGES_DIRECTORY / package_path
     package_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_path = package_dir / "agent.yaml"
