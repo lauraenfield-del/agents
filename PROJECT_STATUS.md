@@ -31,10 +31,10 @@ This document tracks the status of the agent framework project.
 - **test_interfaces.py:** 3 passed
 - **test_events.py:** 4 passed
 - **test_logging.py:** 2 passed
-- **test_runtime.py:** 3 passed
+- **test_runtime.py:** 4 passed
 - **test_tools.py:** 6 passed
 - **test_memory.py:** 6 passed
-- **test_packages.py:** added for package discovery/validation/loading coverage
+- **test_packages.py:** 5 passed
 
 ## Changelog
 
